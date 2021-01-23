@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Исходные файлы\Systems">
+      <UniqueIdentifier>{c5c38b76-9987-46de-b19b-5f196a4f7a7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Systems\Subsystems">
+      <UniqueIdentifier>{ede8d68e-b40b-47ea-966a-8cdfe0b7742d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Systems">
+      <UniqueIdentifier>{0849e0cb-9f41-416b-b5e8-ed28b0459dfd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Systems\Subsystems">
+      <UniqueIdentifier>{aa463247-69bb-48a7-a673-89bae9ce759a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Systems\Scene">
+      <UniqueIdentifier>{b288e47a-7f95-4f66-b4db-d3cbf591ac15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{e0eced75-d07e-4757-a4e3-63f25ff31ec3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Systems\Scene\EntityComponentSystem">
+      <UniqueIdentifier>{f0b6d561-360d-4da9-bcb5-48f5d39cf094}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Systems\Scene">
+      <UniqueIdentifier>{be7eb0ef-5fcc-4946-ac9d-e118763f51f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Systems\Scene\EntityComponentSystem">
+      <UniqueIdentifier>{3542ce22-5dd1-4dab-b065-f9654a36df3e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanRenderManager.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="LoggerManager.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Time.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="InputManager.cpp">
+      <Filter>Исходные файлы\Systems\Subsystems</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowManager.cpp">
+      <Filter>Исходные файлы\Systems\Subsystems</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneManager.h">
+      <Filter>Файлы заголовков\Systems\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.h">
+      <Filter>Файлы заголовков\Systems\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity.cpp">
+      <Filter>Исходные файлы\Systems\Scene\EntityComponentSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneManager.cpp">
+      <Filter>Исходные файлы\Systems\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Исходные файлы\Systems\Scene</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Window.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineSystem.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="InputManager.h">
+      <Filter>Файлы заголовков\Systems\Subsystems</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowManager.h">
+      <Filter>Файлы заголовков\Systems\Subsystems</Filter>
+    </ClInclude>
+    <ClInclude Include="LoggerManager.h">
+      <Filter>Файлы заголовков\Systems\Subsystems</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanRenderManager.h">
+      <Filter>Файлы заголовков\Systems\Subsystems</Filter>
+    </ClInclude>
+    <ClInclude Include="Time.h">
+      <Filter>Файлы заголовков\Systems\Subsystems</Filter>
+    </ClInclude>
+    <ClInclude Include="Singleton.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\shader.vert">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
