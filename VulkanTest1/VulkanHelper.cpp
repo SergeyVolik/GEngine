@@ -1,4 +1,6 @@
 #include "VulkanHelper.h"
+#include <stdexcept>
+#include "Vertex.h"
 
 void te::VulkanHelper::copyBuffer(
     VkBuffer srcBuffer,
@@ -57,3 +59,41 @@ VkCommandBuffer te::VulkanHelper::beginSingleTimeCommands(VkCommandPool commandP
 
     return commandBuffer;
 }
+
+std::vector<VkPhysicalDevice> te::VulkanHelper::getPhysicalDevices(VkInstance instance)
+{
+    uint32_t deviceCount = 0;
+
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    return devices;
+}
+//void te::VulkanHelper::createVertexBuffer(std::vector<te::Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
+//{
+//    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+//
+//    VkBuffer stagingBuffer;
+//    VkDeviceMemory stagingBufferMemory;
+//
+//    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+//
+//    void* data;
+//    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+//    memcpy(data, vertices.data(), (size_t)bufferSize);
+//    vkUnmapMemory(device, stagingBufferMemory);
+//
+//    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+//
+//    te::VulkanHelper::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, graphicsQueue, commandPool, device);
+//    //copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+//
+//    vkDestroyBuffer(device, stagingBuffer, nullptr);
+//    vkFreeMemory(device, stagingBufferMemory, nullptr);
+//}

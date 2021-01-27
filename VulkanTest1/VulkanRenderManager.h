@@ -190,8 +190,8 @@ namespace te
         void createTextureImageView();
         void createTextureSampler();
         void loadModel();
-        void createVertexBuffer();
-        void createIndexBuffer();
+        //void createVertexBuffer();
+        //void createIndexBuffer();
        
         void createUniformBuffers();
         void createDescriptorPool();
@@ -240,6 +240,7 @@ namespace te
         void drawFrame();
         static void initialize(te::Window* wnd) {
 
+
             _instance = new VulkanRenderManager();
             _instance->window = wnd;
 
@@ -260,8 +261,17 @@ namespace te
             _instance->createTextureImageView();
             _instance->createTextureSampler();
             _instance->loadModel();
-            _instance->createVertexBuffer();
-            _instance->createIndexBuffer();
+
+            _instance->createVertexBuffer(
+                _instance->vertices,
+                _instance->vertexBuffer,
+                _instance->vertexBufferMemory);
+
+            _instance->createIndexBuffer(
+                _instance->_indices,
+                _instance->_indexBuffer,
+                _instance->_indexBufferMemory
+            );
             _instance->createUniformBuffers();
             _instance->createDescriptorPool();
             _instance->createDescriptorSets();
