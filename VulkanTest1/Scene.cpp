@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "Entity.h"
 
 void te::Scene::addEntity(te::Entity* entity)
 {

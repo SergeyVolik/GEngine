@@ -65,6 +65,7 @@ private:
 
         }
 
+        // ожидание конца отрисовки об'ектов
         vkDeviceWaitIdle(te::VulkanRenderManager::getInstance()->device);
     }
 
@@ -82,14 +83,10 @@ private:
 
 
 };
-#include <typeinfo>
-#include "Component.h";
-#include "Transform.h"
-#include "Entity.h"
+
 int main() {
 
-    te::Component* com = new te::Transform();
-     
+
     GEngine app;
 
     try {

@@ -3,7 +3,6 @@
 
 #include <list>
 
-
 namespace te
 {
 	class Entity;

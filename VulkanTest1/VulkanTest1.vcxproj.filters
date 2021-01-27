@@ -40,6 +40,15 @@
     <Filter Include="Исходные файлы\Systems\Scene\EntityComponentSystem">
       <UniqueIdentifier>{3542ce22-5dd1-4dab-b065-f9654a36df3e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы заголовков\Systems\Model">
+      <UniqueIdentifier>{dfd64148-b410-4132-be65-3935b490043a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Utils">
+      <UniqueIdentifier>{86fca206-e6b2-4275-a06d-8efe2f8c56e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Utils">
+      <UniqueIdentifier>{8e650fa0-b340-419b-ae98-2f99270e44d2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -77,6 +86,15 @@
     </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>Исходные файлы\Systems\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Исходные файлы\Systems\Scene\EntityComponentSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="FileReader.cpp">
+      <Filter>Исходные файлы\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanHelper.cpp">
+      <Filter>Исходные файлы\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -124,6 +142,18 @@
     </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Файлы заголовков\Systems\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="FileReader.h">
+      <Filter>Файлы заголовков\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanHelper.h">
+      <Filter>Файлы заголовков\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

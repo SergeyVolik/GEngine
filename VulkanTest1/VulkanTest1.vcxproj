@@ -156,14 +156,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="FileReader.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="LoggerManager.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Scene.h" />
     <ClCompile Include="SceneManager.h" />
     <ClCompile Include="Time.cpp" />
+    <ClCompile Include="VulkanHelper.cpp" />
     <ClCompile Include="VulkanRenderManager.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WindowManager.cpp" />
@@ -173,14 +176,18 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="EngineSystem.h" />
     <ClInclude Include="Entity.h" />
+    <ClInclude Include="FileReader.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="LoggerManager.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="Mesh.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Singleton.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Vertex.h" />
+    <ClInclude Include="VulkanHelper.h" />
     <ClInclude Include="VulkanRenderManager.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WindowManager.h" />

@@ -36,7 +36,7 @@
 #include "Vertex.h"
 #include "Window.h"
 #include "InputManager.h"
-#include "Renderer.h"
+//#include "Renderer.h"
 
 
 const uint32_t WIDTH = 800;
@@ -115,8 +115,7 @@ namespace te
     {
     private:
 
-        std::vector<Renderer*> renderers;
-
+       
         te::Window* window;
 
         VkInstance instance;
@@ -154,11 +153,11 @@ namespace te
         VkSampler textureSampler;
 
         std::vector<te::Vertex> vertices;
-        std::vector<uint32_t> indices;
+        std::vector<uint32_t> _indices;
         VkBuffer vertexBuffer;
         VkDeviceMemory vertexBufferMemory;
-        VkBuffer indexBuffer;
-        VkDeviceMemory indexBufferMemory;
+        VkBuffer _indexBuffer;
+        VkDeviceMemory _indexBufferMemory;
 
         std::vector<VkBuffer> uniformBuffers;
         std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -193,20 +192,21 @@ namespace te
         void loadModel();
         void createVertexBuffer();
         void createIndexBuffer();
+       
         void createUniformBuffers();
         void createDescriptorPool();
         void createDescriptorSets();
         void createCommandBuffers();
         void createSyncObjects();
-
+        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
         void updateUniformBuffer(uint32_t currentImage);
-        void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+      
         void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
         void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
         void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-        void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-        VkCommandBuffer beginSingleTimeCommands();
-        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+        
+    
+       
         VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
         void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
         std::vector<const char*> getRequiredExtensions();
@@ -230,9 +230,11 @@ namespace te
         VkShaderModule createShaderModule(const std::vector<char>& code);
         bool checkValidationLayerSupport();
 
-        static std::vector<char> readFile(const std::string& filename);
+        
     public:
         VkDevice device;
+        void createVertexBuffer(std::vector<te::Vertex> indices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
+        void createIndexBuffer(std::vector<uint32_t>, VkBuffer&, VkDeviceMemory&);
         void recreateSwapChain();
         void cleanupSwapChain();
         void drawFrame();
@@ -265,6 +267,7 @@ namespace te
             _instance->createDescriptorSets();
             _instance->createCommandBuffers();
             _instance->createSyncObjects();
+
         };
         static void terminate()
         {
@@ -278,8 +281,8 @@ namespace te
 
             vkDestroyDescriptorSetLayout(_instance->device, _instance->descriptorSetLayout, nullptr);
 
-            vkDestroyBuffer(_instance->device, _instance->indexBuffer, nullptr);
-            vkFreeMemory(_instance->device, _instance->indexBufferMemory, nullptr);
+            vkDestroyBuffer(_instance->device, _instance->_indexBuffer, nullptr);
+            vkFreeMemory(_instance->device, _instance->_indexBufferMemory, nullptr);
 
             vkDestroyBuffer(_instance->device, _instance->vertexBuffer, nullptr);
             vkFreeMemory(_instance->device, _instance->vertexBufferMemory, nullptr);

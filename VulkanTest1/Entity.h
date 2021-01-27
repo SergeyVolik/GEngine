@@ -3,7 +3,6 @@
 
 #include <map>
 
-
 namespace te
 {
 	class Component;

@@ -13,7 +13,7 @@ namespace te
 
 	protected:
 		Component(te::Entity* e) { _entity = e; }
-		Component() { }
+		Component() {  }
 	public:
 
 		te::Entity* getEntity() {
