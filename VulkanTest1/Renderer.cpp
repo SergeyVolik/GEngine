@@ -10,5 +10,5 @@ void te::Renderer::setMesh(Mesh* mesh) { _mesh = mesh; }
 
 void te::Renderer::onAwake()
 {
-	te::VulkanRenderManager::getInstance()->createIndexBuffer(_mesh->getIndices(), _indexBuffer, _indexBufferMemory);
+	//te::VulkanRenderManager::getInstance()->createIndexBuffer(_mesh->getIndices(), _indexBuffer, _indexBufferMemory);
 }

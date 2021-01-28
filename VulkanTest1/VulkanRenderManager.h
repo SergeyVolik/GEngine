@@ -36,8 +36,9 @@
 #include "Vertex.h"
 #include "Window.h"
 #include "InputManager.h"
-//#include "Renderer.h"
-
+#include "VulkanHelper.h"
+#include "Entity.h"
+#include "Transform.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -124,7 +125,8 @@ namespace te
 
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
-
+        Entity* gObject;
+        Transform* gTransform;
         VkQueue graphicsQueue;
         VkQueue presentQueue;
 
@@ -190,8 +192,6 @@ namespace te
         void createTextureImageView();
         void createTextureSampler();
         void loadModel();
-        //void createVertexBuffer();
-        //void createIndexBuffer();
        
         void createUniformBuffers();
         void createDescriptorPool();
@@ -233,7 +233,7 @@ namespace te
         
     public:
         VkDevice device;
-        void createVertexBuffer(std::vector<te::Vertex> indices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
+        //void createVertexBuffer(std::vector<te::Vertex> indices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
         void createIndexBuffer(std::vector<uint32_t>, VkBuffer&, VkDeviceMemory&);
         void recreateSwapChain();
         void cleanupSwapChain();
@@ -261,16 +261,34 @@ namespace te
             _instance->createTextureImageView();
             _instance->createTextureSampler();
             _instance->loadModel();
-
-            _instance->createVertexBuffer(
+            _instance->gObject = new Entity();
+            _instance->gTransform = (Transform*)_instance->gObject->getComponent(typeid(Transform).hash_code());
+            _instance->gTransform->onAwake();
+            te::vk::VulkanHelper::createVertexBuffer(
                 _instance->vertices,
                 _instance->vertexBuffer,
-                _instance->vertexBufferMemory);
+                _instance->vertexBufferMemory,
+                _instance->commandPool,
+                _instance->graphicsQueue,
+                _instance->physicalDevice,
+                _instance->device
+            );
+        
 
-            _instance->createIndexBuffer(
+           /* _instance->createIndexBuffer(
                 _instance->_indices,
                 _instance->_indexBuffer,
                 _instance->_indexBufferMemory
+            );*/
+
+            te::vk::VulkanHelper::createIndexBuffer(
+                _instance->_indices,
+                _instance->_indexBuffer,
+                _instance->_indexBufferMemory,
+                _instance->commandPool,
+                _instance->graphicsQueue,
+                _instance->physicalDevice,
+                _instance->device
             );
             _instance->createUniformBuffers();
             _instance->createDescriptorPool();

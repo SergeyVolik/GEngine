@@ -47,7 +47,9 @@ namespace te
 		void createSurface(VkInstance instance, VkSurfaceKHR* pSurface, VkAllocationCallbacks* pAllocator);
 		void setFullScreen(bool);
 		void setWindowSize(int width, int height);
-
+		inline void setTitle(const char* title) {
+			glfwSetWindowTitle(window, title);
+		}
 		~Window();
 	};
 }

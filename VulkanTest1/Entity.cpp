@@ -12,7 +12,7 @@
 #endif
 
 te::Entity::Entity() {
-	addComponent(new te::Transform);
+	addComponent(new te::Transform(this));
 	
 }
 

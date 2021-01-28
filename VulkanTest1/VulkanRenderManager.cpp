@@ -65,7 +65,7 @@ void te::VulkanRenderManager::createSurface()
 void te::VulkanRenderManager::pickPhysicalDevice()
 {
     
-    std::vector<VkPhysicalDevice> devices = te::VulkanHelper::getPhysicalDevices(instance);
+    std::vector<VkPhysicalDevice> devices = te::vk::VulkanHelper::getPhysicalDevices(instance);
 
 
     for (const auto& device : devices) {
@@ -558,71 +558,7 @@ void te::VulkanRenderManager::loadModel()
     }
 }
 
-//void te::VulkanRenderManager::createVertexBuffer()
-//{
-//    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-//
-//    VkBuffer stagingBuffer;
-//    VkDeviceMemory stagingBufferMemory;
-//    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-//
-//    void* data;
-//    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-//    memcpy(data, vertices.data(), (size_t)bufferSize);
-//    vkUnmapMemory(device, stagingBufferMemory);
-//
-//    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-//
-//    te::VulkanHelper::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, graphicsQueue, commandPool, device);
-//    //copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-//
-//    vkDestroyBuffer(device, stagingBuffer, nullptr);
-//    vkFreeMemory(device, stagingBufferMemory, nullptr);
-//}
 
-void te::VulkanRenderManager::createVertexBuffer(std::vector<te::Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
-{
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), (size_t)bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-    te::VulkanHelper::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, graphicsQueue, commandPool, device);
-    //copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-//void te::VulkanRenderManager::createIndexBuffer()
-//{
-//    VkDeviceSize bufferSize = sizeof(_indices[0]) * _indices.size();
-//
-//    VkBuffer stagingBuffer;
-//    VkDeviceMemory stagingBufferMemory;
-//    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-//
-//    void* data;
-//    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-//    memcpy(data, _indices.data(), (size_t)bufferSize);
-//    vkUnmapMemory(device, stagingBufferMemory);
-//
-//    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer, _indexBufferMemory);
-//
-//    te::VulkanHelper::copyBuffer(stagingBuffer, _indexBuffer, bufferSize, graphicsQueue, commandPool, device);
-//    //copyBuffer(stagingBuffer, _indexBuffer, bufferSize);
-//
-//    vkDestroyBuffer(device, stagingBuffer, nullptr);
-//    vkFreeMemory(device, stagingBufferMemory, nullptr);
-//}
 
 void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory)
 {
@@ -639,7 +575,7 @@ void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, V
 
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
-    te::VulkanHelper::copyBuffer(stagingBuffer, indexBuffer, bufferSize, graphicsQueue, commandPool, device);
+    te::vk::VulkanHelper::copyBuffer(stagingBuffer, indexBuffer, bufferSize, graphicsQueue, commandPool, device);
     //copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -808,16 +744,42 @@ void te::VulkanRenderManager::createSyncObjects()
 
 void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
 {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     UniformBufferObject ubo{};
-   
+    
 
+    auto oldPos = gTransform->getPosition();
+    
+    if (InputManager::getKeyDown(KeyCode::KEY_1))
+    {
+        gTransform->setPosition(glm::vec3(oldPos.x, oldPos.y, oldPos.z + te::Time::getDelta()*10));
+    }
+    if (InputManager::getKeyDown(KeyCode::KEY_2))
+    {
+        gTransform->setPosition(glm::vec3(oldPos.x, oldPos.y, oldPos.z - te::Time::getDelta()*10));
+    }
+    if (InputManager::getKeyDown(KeyCode::KEY_3))
+    {
+        gTransform->rotateByX(30);
+    }
+    if (InputManager::getKeyDown(KeyCode::KEY_4))
+    {
+        gTransform->rotateByX(-30);
+    }
+    if (InputManager::getKeyDown(KeyCode::KEY_5))
+    {
+        gTransform->setScale(glm::vec3(2, 2, 2));
+    }
+    if (InputManager::getKeyDown(KeyCode::KEY_6))
+    {
+        gTransform->setScale(glm::vec3(1, 1, 1));
+    }
+    
+    gTransform->onUpdate();
+
+    ubo.model = gTransform->getTransformation();
     //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    //ubo.model = glm::rotate(glm::mat4(1.0f), 1 * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
@@ -832,7 +794,7 @@ void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
 
 void te::VulkanRenderManager::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
-    VkCommandBuffer commandBuffer = te::VulkanHelper::beginSingleTimeCommands(commandPool, device);
+    VkCommandBuffer commandBuffer = te::vk::VulkanHelper::beginSingleTimeCommands(commandPool, device);
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -851,7 +813,7 @@ void te::VulkanRenderManager::copyBufferToImage(VkBuffer buffer, VkImage image, 
 
     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    te::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
+    te::vk::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
 }
 
 void te::VulkanRenderManager::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
@@ -863,7 +825,7 @@ void te::VulkanRenderManager::generateMipmaps(VkImage image, VkFormat imageForma
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    VkCommandBuffer commandBuffer = te::VulkanHelper::beginSingleTimeCommands(commandPool, device);
+    VkCommandBuffer commandBuffer = te::vk::VulkanHelper::beginSingleTimeCommands(commandPool, device);
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -938,12 +900,12 @@ void te::VulkanRenderManager::generateMipmaps(VkImage image, VkFormat imageForma
         0, nullptr,
         1, &barrier);
 
-    te::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
+    te::vk::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
 }
 
 void te::VulkanRenderManager::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
 {
-    VkCommandBuffer commandBuffer = te::VulkanHelper::beginSingleTimeCommands(commandPool, device);
+    VkCommandBuffer commandBuffer = te::vk::VulkanHelper::beginSingleTimeCommands(commandPool, device);
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -988,7 +950,7 @@ void te::VulkanRenderManager::transitionImageLayout(VkImage image, VkFormat form
         1, &barrier
     );
 
-    te::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
+    te::vk::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
 }
 
 

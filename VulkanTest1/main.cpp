@@ -20,7 +20,7 @@
 #include "Window.h"
 #include "InputManager.h"
 #include "SceneManager.h"
-
+#include "Time.h"
 
 class GEngine {
 
@@ -53,7 +53,9 @@ private:
 
         while (!window->windowShouldClose()) {
 
-            te::Time::currentFrame++;
+            te::Time::calcDelta();
+            window->setTitle(std::to_string(te::Time::getDelta()).c_str());
+           
             te::InputManager::pollEvents();
 
             te::VulkanRenderManager::getInstance()->drawFrame();
