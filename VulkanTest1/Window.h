@@ -18,6 +18,8 @@ namespace te
 
 		GLFWwindow* window;
 		bool framebufferResized = false;
+		uint32_t framebufferWidth;
+		uint32_t framebufferHeight;
 
 		static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 			auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
@@ -43,7 +45,10 @@ namespace te
 		void terminateWindow();
 
 		void getFramebufferSize(int* width, int* height);
+		uint32_t getFramebufferWidth();
+		uint32_t getFramebufferHeight();
 		void windowResizing();
+
 		void createSurface(VkInstance instance, VkSurfaceKHR* pSurface, VkAllocationCallbacks* pAllocator);
 		void setFullScreen(bool);
 		void setWindowSize(int width, int height);

@@ -21,7 +21,7 @@
 #include "InputManager.h"
 #include "SceneManager.h"
 #include "Time.h"
-
+#include "Scene.h"
 class GEngine {
 
 public:
@@ -51,15 +51,21 @@ private:
 
     void mainLoop() {
 
+        //te::SceneManager::getInstance()->getCurrentScene()->awakeAllEntities();
+        //te::SceneManager::getInstance()->getCurrentScene()->startAllEntities();
+
         while (!window->windowShouldClose()) {
 
             te::Time::calcDelta();
-            window->setTitle(std::to_string(te::Time::getDelta()).c_str());
+            std::string fpsData = std::to_string(static_cast<int>(te::Time::getDelta() * 1000)) + " ms | " + std::to_string(static_cast<int>(1.0f / te::Time::getDelta())) + " fps";
+            window->setTitle(fpsData.c_str());
            
             te::InputManager::pollEvents();
 
+            
             te::VulkanRenderManager::getInstance()->drawFrame();
-
+           // te::SceneManager::getInstance()->getCurrentScene()->updateAllEntities();
+           
             if (te::InputManager::getKey(te::KeyCode::KEY_LEFT_ALT) && te::InputManager::getKeyDown(te::KeyCode::KEY_ENTER))
             {
                 window->setFullScreen(!window->isFullScreen());
@@ -74,7 +80,9 @@ private:
 
     void cleanup() {
 
-        te::VulkanRenderManager::terminate();
+        te::SceneManager::getInstance()->terminate();
+        te::VulkanRenderManager::getInstance()->terminate();
+       
 
         window->terminateWindow();
         te::WindowManager::getInstance()->terminate();

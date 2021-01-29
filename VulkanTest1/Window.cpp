@@ -12,7 +12,13 @@ te::Window::Window(uint32_t width, uint32_t height, const char* title)
     window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-   
+
+    int fwidth,fheight;
+    glfwGetFramebufferSize(window, &fwidth, &fheight);
+
+    this->framebufferHeight = fheight;
+    this->framebufferWidth = fwidth;
+
     
 }
 
@@ -83,15 +89,31 @@ void te::Window::getFramebufferSize(int* width, int* height)
     glfwGetFramebufferSize(window, width, height);
 }
 
+uint32_t te::Window::getFramebufferWidth()
+{
+    return framebufferWidth;
+}
+
+uint32_t te::Window::getFramebufferHeight()
+{
+    return framebufferHeight;
+}
+
 void te::Window::windowResizing()
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
     while (width == 0 || height == 0) {
+
+
         glfwGetFramebufferSize(window, &width, &height);
         glfwWaitEvents();
+        this->framebufferHeight = height;
+        this->framebufferWidth = width;
     }
 }
+
+
 
 void te::Window::createSurface(VkInstance instance, VkSurfaceKHR* pSurface, VkAllocationCallbacks* pAllocator)
 {

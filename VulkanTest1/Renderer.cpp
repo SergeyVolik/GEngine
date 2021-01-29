@@ -5,7 +5,8 @@
 #include "Entity.h"
 
 
-te::Renderer::Renderer(te::Entity* e) : Component(e) {}
+te::Renderer::Renderer(te::Entity* e) : Component(e) { VulkanRenderManager::getInstance()->renderers.push_back(this); }
+te::Renderer::~Renderer()  { VulkanRenderManager::getInstance()->renderers.remove(this); }
 void te::Renderer::setMesh(Mesh* mesh) { _mesh = mesh; }
 
 void te::Renderer::onAwake()

@@ -25,6 +25,7 @@ namespace te
 		Mesh* _mesh;
 	public:
 		Renderer() {}
+		~Renderer();
 		Renderer(Entity* e);
 		void setMesh(Mesh* mesh);
 

@@ -12,12 +12,13 @@
 #endif
 
 te::Entity::Entity() {
-	addComponent(new te::Transform(this));
+	transform = new te::Transform(this);
+	addComponent(transform);
 	
 }
 
 te::Entity::~Entity() {
-	for (std::map<size_t, te::Component*>::iterator it = components.begin(); it != components.end(); ++it)
+	for (std::unordered_map<size_t, te::Component*>::iterator it = components.begin(); it != components.end(); ++it)
 		delete it->second;
 }
 
@@ -45,7 +46,7 @@ bool te::Entity::addComponent(Component* comp)
 
 te::Component* te::Entity::getComponent(size_t typeHash)
 {
-	std::map<size_t, Component*>::iterator it = components.find(typeHash);
+	std::unordered_map<size_t, Component*>::iterator it = components.find(typeHash);
 	if (it != components.end())
 	{
 		#ifndef NDEBUG
@@ -59,4 +60,22 @@ te::Component* te::Entity::getComponent(size_t typeHash)
 	#endif // DEBUG
 	return nullptr;
 	
+}
+
+void te::Entity::awakeAllComponents()
+{
+	for (std::unordered_map<size_t, te::Component*>::iterator it = components.begin(); it != components.end(); ++it)
+		it->second->onAwake();
+}
+
+void te::Entity::startAllComponents()
+{
+	for (std::unordered_map<size_t, te::Component*>::iterator it = components.begin(); it != components.end(); ++it)
+		it->second->onStart();
+}
+
+void te::Entity::updateAllComponents()
+{
+	for (std::unordered_map<size_t, te::Component*>::iterator it = components.begin(); it != components.end(); ++it)
+		it->second->onUpdate();
 }

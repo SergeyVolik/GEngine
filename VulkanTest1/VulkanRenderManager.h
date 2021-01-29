@@ -39,6 +39,7 @@
 #include "VulkanHelper.h"
 #include "Entity.h"
 #include "Transform.h"
+#include "Renderer.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -173,8 +174,11 @@ namespace te
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
         std::vector<VkFence> imagesInFlight;
+
+        
         size_t currentFrame = 0;
 
+       
         void createInstance();
         void setupDebugMessenger();
         void createSurface();
@@ -232,6 +236,7 @@ namespace te
 
         
     public:
+        std::list<Renderer*> renderers;
         VkDevice device;
         //void createVertexBuffer(std::vector<te::Vertex> indices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
         void createIndexBuffer(std::vector<uint32_t>, VkBuffer&, VkDeviceMemory&);
