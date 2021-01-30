@@ -11,7 +11,6 @@ namespace te
 	public:
 		VkDevice memoryHolderDevice;
 
-		VkSampler textureSampler;
 		VkImageView textureView;
 		VkImage texture;
 		VkDeviceMemory textureDeviceMemory;
@@ -23,7 +22,7 @@ namespace te
 
 		~Texture()
 		{
-			vkDestroySampler(memoryHolderDevice, textureSampler, nullptr);
+			
 			vkDestroyImageView(memoryHolderDevice, textureView, nullptr);
 			vkDestroyImage(memoryHolderDevice, texture, nullptr);
 			vkFreeMemory(memoryHolderDevice, textureDeviceMemory, nullptr);

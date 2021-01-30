@@ -181,8 +181,8 @@ namespace te
         void createCommandPool();
         void createDepthResources();
         void createFramebuffers();
-        void createTextureImage();
-        void createTextureImageView();
+        void createTextureImage(VkImage&, uint32_t&);
+        void createTextureImageView(VkImageView& imgView, const VkImage textureImage, const uint32_t mipLevels);
         void createTextureSampler();
         void loadModel();
        
@@ -252,8 +252,8 @@ namespace te
             _instance->createCommandPool();
             _instance->createDepthResources();
             _instance->createFramebuffers();
-            _instance->createTextureImage();
-            _instance->createTextureImageView();
+            _instance->createTextureImage(_instance->textureImage, _instance->mipLevels);
+            _instance->createTextureImageView(_instance->textureImageView,_instance->textureImage, _instance->mipLevels);
             _instance->createTextureSampler();
             _instance->loadModel();
             _instance->gObject = new Entity();

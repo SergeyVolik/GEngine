@@ -481,7 +481,7 @@ void te::VulkanRenderManager::createFramebuffers()
 #pragma region Load texture to gpu
 
 
-void te::VulkanRenderManager::createTextureImage()
+void te::VulkanRenderManager::createTextureImage(VkImage& textureImage, uint32_t& mipLevels)
 {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -525,9 +525,9 @@ void te::VulkanRenderManager::createTextureImage()
     generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
 }
 
-void te::VulkanRenderManager::createTextureImageView()
+void te::VulkanRenderManager::createTextureImageView(VkImageView& imgView, const VkImage textureImage, const uint32_t mipLevels)
 {
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    imgView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
 void te::VulkanRenderManager::createTextureSampler()
