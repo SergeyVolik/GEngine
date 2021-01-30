@@ -174,7 +174,7 @@ namespace te
         void pickPhysicalDevice();
         void createLogicalDevice();
         void createSwapChain();
-        void createImageViews();
+        void createSwapChainImageViews();
         void createRenderPass();
         void createDescriptorSetLayout();
         void createGraphicsPipeline();
@@ -191,7 +191,7 @@ namespace te
         void createDescriptorSets();
         void createCommandBuffers();
         void createSyncObjects();
-        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+       
         void updateUniformBuffer(uint32_t currentImage);
       
 
@@ -210,6 +210,7 @@ namespace te
         bool checkDeviceExtensionSupport(VkPhysicalDevice device);
         VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
             VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -244,7 +245,7 @@ namespace te
             _instance->pickPhysicalDevice();
             _instance->createLogicalDevice();
             _instance->createSwapChain();
-            _instance->createImageViews();
+            _instance->createSwapChainImageViews();
             _instance->createRenderPass();
             _instance->createDescriptorSetLayout();
             _instance->createGraphicsPipeline();
@@ -278,15 +279,18 @@ namespace te
             _instance->createSyncObjects();
 
         };
+
         static void terminate()
         {
             _instance->cleanupSwapChain();
 
+
+            // удаление даных о текстуре в  GPU
             vkDestroySampler(_instance->device, _instance->textureSampler, nullptr);
             vkDestroyImageView(_instance->device, _instance->textureImageView, nullptr);
-
             vkDestroyImage(_instance->device, _instance->textureImage, nullptr);
             vkFreeMemory(_instance->device, _instance->textureImageMemory, nullptr);
+
 
             vkDestroyDescriptorSetLayout(_instance->device, _instance->descriptorSetLayout, nullptr);
 
