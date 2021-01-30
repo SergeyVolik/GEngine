@@ -79,6 +79,16 @@ namespace te
 				VkMemoryPropertyFlags properties,
 				VkPhysicalDevice physicalDevice
 			);
+
+			static void copyBufferToImage(
+				VkBuffer buffer,
+				VkImage image,
+				uint32_t width,
+				uint32_t height,
+				VkCommandPool commandPool,
+				VkQueue graphicsQueue,
+				VkDevice device
+			);
 		};
 	}
 	

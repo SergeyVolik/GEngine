@@ -3,6 +3,7 @@
 #include "Vertex.h"
 #include "FileReader.h"
 #include "VulkanHelper.h"
+#include "AssetsLoader.h"
 
 void te::VulkanRenderManager::createInstance()
 {
@@ -474,8 +475,18 @@ void te::VulkanRenderManager::createTextureImage()
 
     createImage(texWidth, texHeight, mipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
+
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-    copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+    te::vk::VulkanHelper::copyBufferToImage(
+        stagingBuffer,
+        textureImage,
+        static_cast<uint32_t>(texWidth),
+        static_cast<uint32_t>(texHeight),
+        commandPool,
+        graphicsQueue,
+        device
+    );
     //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -519,68 +530,10 @@ void te::VulkanRenderManager::createTextureSampler()
 
 void te::VulkanRenderManager::loadModel()
 {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
-
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-        throw std::runtime_error(warn + err);
-    }
-
-    std::unordered_map<te::Vertex, uint32_t> uniqueVertices{};
-
-    for (const auto& shape : shapes) {
-        for (const auto& index : shape.mesh.indices) {
-            te::Vertex vertex{};
-
-            vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
-
-            vertex.texCoord = {
-                attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-            };
-
-            vertex.color = { 1.0f, 1.0f, 1.0f };
-
-            if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
-
-            _indices.push_back(uniqueVertices[vertex]);
-        }
-        break;
-    }
+    te::AssetsLoader::getInstance()->loadModel(MODEL_PATH.c_str(), vertices, _indices);
+   
 }
 
-
-
-void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory)
-{
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-    te::vk::VulkanHelper::copyBuffer(stagingBuffer, indexBuffer, bufferSize, graphicsQueue, commandPool, device);
-    //copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
 
 void te::VulkanRenderManager::createUniformBuffers()
 {
@@ -796,29 +749,6 @@ void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
 
 
 
-void te::VulkanRenderManager::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
-{
-    VkCommandBuffer commandBuffer = te::vk::VulkanHelper::beginSingleTimeCommands(commandPool, device);
-
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-    region.imageOffset = { 0, 0, 0 };
-    region.imageExtent = {
-        width,
-        height,
-        1
-    };
-
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    te::vk::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
-}
 
 void te::VulkanRenderManager::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
 {
@@ -1294,7 +1224,33 @@ VkShaderModule te::VulkanRenderManager::createShaderModule(const std::vector<cha
 
 
 
-void te::VulkanRenderManager::recreateSwapChain()
+    void te::VulkanRenderManager::createVertexBuffer(std::vector<te::Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
+    {
+        te::vk::VulkanHelper::createVertexBuffer(
+             vertices,
+             vertexBuffer,
+             vertexBufferMemory,
+            _instance->commandPool,
+            _instance->graphicsQueue,
+            _instance->physicalDevice,
+            _instance->device
+        );
+    }
+
+    void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory)
+    {
+        te::vk::VulkanHelper::createIndexBuffer(
+            indices,
+            indexBuffer,
+            indexBufferMemory,
+            _instance->commandPool,
+            _instance->graphicsQueue,
+            _instance->physicalDevice,
+            _instance->device
+        );
+    }
+
+    void te::VulkanRenderManager::recreateSwapChain()
 {
     window->windowResizing();
 

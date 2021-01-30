@@ -1,11 +1,17 @@
 #ifndef GE_VERTEX
 #define GE_VERTEX
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 #include <array>
+
 namespace te
 {
     struct Vertex {
@@ -48,4 +54,14 @@ namespace te
         }
     };
 }
+
+namespace std {
+    template<> struct hash<te::Vertex> {
+        size_t operator()(te::Vertex const& vertex) const {
+            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+    };
+}
+
+
 #endif // !1

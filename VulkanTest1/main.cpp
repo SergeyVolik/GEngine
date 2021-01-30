@@ -1,27 +1,14 @@
-//#define GLFW_INCLUDE_VULKAN
-//#include <GLFW/glfw3.h>
-
-//#define GLM_FORCE_RADIANS
-//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-//#define GLM_ENABLE_EXPERIMENTAL
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
-//#include <glm/gtx/hash.hpp>
-
 #define STB_IMAGE_IMPLEMENTATION
-
-//#include <stb_image.h>
-
 #define TINYOBJLOADER_IMPLEMENTATION
-//#include <tiny_obj_loader.h>
-
 
 #include "VulkanRenderManager.h"
+#include "WindowManager.h"
 #include "Window.h"
 #include "InputManager.h"
 #include "SceneManager.h"
 #include "Time.h"
-#include "Scene.h"
+#include "AssetsLoader.h"
+
 class GEngine {
 
 public:
@@ -29,6 +16,7 @@ public:
         initSystems();
        
         mainLoop();
+
         cleanup();
     }
 
@@ -42,10 +30,13 @@ private:
         te::WindowManager::initialize();
         window = new te::Window(WIDTH, HEIGHT, "Vulkan");
         te::InputManager::initialize(window->getWindow());
+        te::AssetsLoader::initialize();
+
         te::VulkanRenderManager::initialize(window);
+       
         te::SceneManager::initialize();
         te::SceneManager::getInstance()->createScene("demo");
-
+       
     }
 
 
@@ -57,7 +48,8 @@ private:
         while (!window->windowShouldClose()) {
 
             te::Time::calcDelta();
-            std::string fpsData = std::to_string(static_cast<int>(te::Time::getDelta() * 1000)) + " ms | " + std::to_string(static_cast<int>(1.0f / te::Time::getDelta())) + " fps";
+            std::string fpsData = std::to_string(static_cast<int>(te::Time::getDelta() * 1000)) 
+                + " ms | " + std::to_string(static_cast<int>(1.0f / te::Time::getDelta())) + " fps";
             window->setTitle(fpsData.c_str());
            
             te::InputManager::pollEvents();
@@ -86,6 +78,8 @@ private:
 
         window->terminateWindow();
         te::WindowManager::getInstance()->terminate();
+
+        te::AssetsLoader::terminate();
 
 
     }

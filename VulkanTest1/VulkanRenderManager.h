@@ -7,16 +7,13 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
 
-
 #include <stb_image.h>
 #include <tiny_obj_loader.h>
-
 
 #include <iostream>
 #include <fstream>
@@ -65,13 +62,7 @@ inline VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugU
     }
 }
 
-namespace std {
-    template<> struct hash<te::Vertex> {
-        size_t operator()(te::Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-        }
-    };
-}
+
 inline void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -110,8 +101,6 @@ struct SwapChainSupportDetails {
 
 namespace te
 {
-
-    
 
     class VulkanRenderManager : public te::EngineSystem<VulkanRenderManager>
     {
@@ -205,7 +194,7 @@ namespace te
         void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
         void updateUniformBuffer(uint32_t currentImage);
       
-        void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
         void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
         void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
         
@@ -238,7 +227,7 @@ namespace te
     public:
         std::list<Renderer*> renderers;
         VkDevice device;
-        //void createVertexBuffer(std::vector<te::Vertex> indices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
+        void createVertexBuffer(std::vector<te::Vertex> indices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
         void createIndexBuffer(std::vector<uint32_t>, VkBuffer&, VkDeviceMemory&);
         void recreateSwapChain();
         void cleanupSwapChain();
@@ -269,31 +258,18 @@ namespace te
             _instance->gObject = new Entity();
             _instance->gTransform = (Transform*)_instance->gObject->getComponent(typeid(Transform).hash_code());
             _instance->gTransform->onAwake();
-            te::vk::VulkanHelper::createVertexBuffer(
+
+            _instance->createVertexBuffer(
                 _instance->vertices,
                 _instance->vertexBuffer,
-                _instance->vertexBufferMemory,
-                _instance->commandPool,
-                _instance->graphicsQueue,
-                _instance->physicalDevice,
-                _instance->device
+                _instance->vertexBufferMemory
+            
             );
         
-
-           /* _instance->createIndexBuffer(
+            _instance->createIndexBuffer(
                 _instance->_indices,
                 _instance->_indexBuffer,
                 _instance->_indexBufferMemory
-            );*/
-
-            te::vk::VulkanHelper::createIndexBuffer(
-                _instance->_indices,
-                _instance->_indexBuffer,
-                _instance->_indexBufferMemory,
-                _instance->commandPool,
-                _instance->graphicsQueue,
-                _instance->physicalDevice,
-                _instance->device
             );
             _instance->createUniformBuffers();
             _instance->createDescriptorPool();
