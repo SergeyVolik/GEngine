@@ -1,8 +1,7 @@
 #ifndef VULKAN_RENDERER_MANAGER
 #define VULKAN_RENDERER_MANAGER
-
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.hpp>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -52,23 +51,7 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-inline VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-    else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
 
-
-inline void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -94,9 +77,9 @@ struct QueueFamilyIndices {
 };
 
 struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+    vk::SurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> formats;
+    std::vector<vk::PresentModeKHR> presentModes;
 };
 
 namespace te
@@ -109,60 +92,62 @@ namespace te
        
         te::Window* window;
 
-        VkInstance instance;
-        VkDebugUtilsMessengerEXT debugMessenger;
-        VkSurfaceKHR surface;
+        vk::Instance instance;
+        vk::DebugUtilsMessengerEXT debugMessenger;
 
-        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        //VkSurfaceKHR surface;
+        vk::SurfaceKHR surface;
 
+        //VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        vk::PhysicalDevice physicalDevice;
         Entity* gObject;
         Transform* gTransform;
-        VkQueue graphicsQueue;
-        VkQueue presentQueue;
+        vk::Queue graphicsQueue;
+        vk::Queue presentQueue;
 
-        VkSwapchainKHR swapChain;
-        std::vector<VkImage> swapChainImages;
-        VkFormat swapChainImageFormat;
-        VkExtent2D swapChainExtent;
-        std::vector<VkImageView> swapChainImageViews;
-        std::vector<VkFramebuffer> swapChainFramebuffers;
+        vk::SwapchainKHR swapChain;
+        std::vector<vk::Image> swapChainImages;
+        vk::Format swapChainImageFormat;
+        vk::Extent2D swapChainExtent;
+        std::vector<vk::ImageView> swapChainImageViews;
+        std::vector<vk::Framebuffer> swapChainFramebuffers;
 
-        VkRenderPass renderPass;
-        VkDescriptorSetLayout descriptorSetLayout;
-        VkPipelineLayout pipelineLayout;
-        VkPipeline graphicsPipeline;
+        vk::RenderPass renderPass;
+        vk::DescriptorSetLayout descriptorSetLayout;
+        vk::PipelineLayout pipelineLayout;
+        vk::Pipeline graphicsPipeline;
 
-        VkCommandPool commandPool;
+        vk::CommandPool commandPool;
 
-        VkImage depthImage;
-        VkDeviceMemory depthImageMemory;
-        VkImageView depthImageView;
+        vk::Image depthImage;
+        vk::DeviceMemory depthImageMemory;
+        vk::ImageView depthImageView;
 
         uint32_t mipLevels;
-        VkImage textureImage;
-        VkDeviceMemory textureImageMemory;
-        VkImageView textureImageView;
-        VkSampler textureSampler;
+        vk::Image textureImage;
+        vk::DeviceMemory textureImageMemory;
+        vk::ImageView textureImageView;
+        vk::Sampler textureSampler;
 
         std::vector<te::Vertex> vertices;
         std::vector<uint32_t> _indices;
-        VkBuffer vertexBuffer;
-        VkDeviceMemory vertexBufferMemory;
-        VkBuffer _indexBuffer;
-        VkDeviceMemory _indexBufferMemory;
+        vk::Buffer vertexBuffer;
+        vk::DeviceMemory vertexBufferMemory;
+        vk::Buffer _indexBuffer;
+        vk::DeviceMemory _indexBufferMemory;
 
-        std::vector<VkBuffer> uniformBuffers;
-        std::vector<VkDeviceMemory> uniformBuffersMemory;
+        std::vector<vk::Buffer> uniformBuffers;
+        std::vector<vk::DeviceMemory> uniformBuffersMemory;
 
-        VkDescriptorPool descriptorPool;
-        std::vector<VkDescriptorSet> descriptorSets;
+        vk::DescriptorPool descriptorPool;
+        std::vector<vk::DescriptorSet> descriptorSets;
 
-        std::vector<VkCommandBuffer> commandBuffers;
+        std::vector<vk::CommandBuffer> commandBuffers;
 
-        std::vector<VkSemaphore> imageAvailableSemaphores;
-        std::vector<VkSemaphore> renderFinishedSemaphores;
-        std::vector<VkFence> inFlightFences;
-        std::vector<VkFence> imagesInFlight;
+        std::vector<vk::Semaphore> imageAvailableSemaphores;
+        std::vector<vk::Semaphore> renderFinishedSemaphores;
+        std::vector<vk::Fence> inFlightFences;
+        std::vector<vk::Fence> imagesInFlight;
 
         
         size_t currentFrame = 0;
@@ -181,8 +166,8 @@ namespace te
         void createCommandPool();
         void createDepthResources();
         void createFramebuffers();
-        void createTextureImage(VkImage&, uint32_t&);
-        void createTextureImageView(VkImageView& imgView, const VkImage textureImage, const uint32_t mipLevels);
+        void createTextureImage(vk::Image&, uint32_t&);
+        void createTextureImageView(vk::ImageView& imgView, const vk::Image textureImage, const uint32_t mipLevels);
         void createTextureSampler();
         void loadModel();
        
@@ -197,21 +182,21 @@ namespace te
         void updateUniformBuffer(uint32_t currentImage);
       
 
-        void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-        void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+        void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+        void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
         
     
        
-        VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
-        void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+        vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels);
+        void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
         std::vector<const char*> getRequiredExtensions();
-        bool isDeviceSuitable(VkPhysicalDevice device);
-        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-        SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+        bool isDeviceSuitable(vk::PhysicalDevice device);
+        QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
+        SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
+        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
+        bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
+        vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
+        vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -219,19 +204,19 @@ namespace te
             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
             void* pUserData
         );
-        VkFormat findDepthFormat();
-        uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-        VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-        void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-        VkShaderModule createShaderModule(const std::vector<char>& code);
+        vk::Format findDepthFormat();
+        uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+        vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+        void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory);
+        vk::ShaderModule createShaderModule(const std::vector<char>& code);
         bool checkValidationLayerSupport();
 
         
     public:
         std::list<Renderer*> renderers;
-        VkDevice device;
-        void createVertexBuffer(std::vector<te::Vertex> indices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
-        void createIndexBuffer(std::vector<uint32_t>, VkBuffer&, VkDeviceMemory&);
+        vk::Device device;
+        void createVertexBuffer(std::vector<te::Vertex> indices, vk::Buffer& vertexBuffer, vk::DeviceMemory& vertexBufferMemory);
+        void createIndexBuffer(std::vector<uint32_t>, vk::Buffer&, vk::DeviceMemory&);
         void recreateSwapChain();
         void cleanupSwapChain();
         void drawFrame();
@@ -291,36 +276,37 @@ namespace te
 
 
             // удаление даных о текстуре в  GPU
-            vkDestroySampler(_instance->device, _instance->textureSampler, nullptr);
-            vkDestroyImageView(_instance->device, _instance->textureImageView, nullptr);
-            vkDestroyImage(_instance->device, _instance->textureImage, nullptr);
-            vkFreeMemory(_instance->device, _instance->textureImageMemory, nullptr);
+            _instance->device.destroySampler(_instance->textureSampler, nullptr);
+            _instance->device.destroyImageView(_instance->textureImageView, nullptr);
+            _instance->device.destroyImage(_instance->textureImage, nullptr);
+            _instance->device.freeMemory(_instance->textureImageMemory, nullptr);
 
 
-            vkDestroyDescriptorSetLayout(_instance->device, _instance->descriptorSetLayout, nullptr);
+            _instance->device.destroyDescriptorSetLayout(_instance->descriptorSetLayout, nullptr);
 
-            vkDestroyBuffer(_instance->device, _instance->_indexBuffer, nullptr);
-            vkFreeMemory(_instance->device, _instance->_indexBufferMemory, nullptr);
+            _instance->device.destroyBuffer(_instance->_indexBuffer, nullptr);
+            _instance->device.freeMemory(_instance->_indexBufferMemory, nullptr);
 
-            vkDestroyBuffer(_instance->device, _instance->vertexBuffer, nullptr);
-            vkFreeMemory(_instance->device, _instance->vertexBufferMemory, nullptr);
+            _instance->device.destroyBuffer(_instance->vertexBuffer, nullptr);
+            _instance->device.freeMemory(_instance->vertexBufferMemory, nullptr);
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-                vkDestroySemaphore(_instance->device, _instance->renderFinishedSemaphores[i], nullptr);
-                vkDestroySemaphore(_instance->device, _instance->imageAvailableSemaphores[i], nullptr);
-                vkDestroyFence(_instance->device, _instance->inFlightFences[i], nullptr);
+                _instance->device.destroySemaphore(_instance->renderFinishedSemaphores[i], nullptr);
+                _instance->device.destroySemaphore(_instance->imageAvailableSemaphores[i], nullptr);
+                _instance->device.destroyFence(_instance->inFlightFences[i], nullptr);
             }
 
-            vkDestroyCommandPool(_instance->device, _instance->commandPool, nullptr);
+            _instance->device.destroyCommandPool(_instance->commandPool, nullptr);
 
-            vkDestroyDevice(_instance->device, nullptr);
+            _instance->device.destroy();
 
             if (enableValidationLayers) {
-                DestroyDebugUtilsMessengerEXT(_instance->instance, _instance->debugMessenger, nullptr);
+                _instance->instance.destroyDebugUtilsMessengerEXT(_instance->debugMessenger, nullptr);
             }
 
-            vkDestroySurfaceKHR(_instance->instance, _instance->surface, nullptr);
-            vkDestroyInstance(_instance->instance, nullptr);
+            
+            _instance->instance.destroySurfaceKHR(_instance->surface, nullptr);          
+            _instance->instance.destroy();
 
         }
     };

@@ -1,93 +1,93 @@
 #ifndef G_VULKAN_HELPER
 #define G_VULKAN_HELPER
 
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.hpp>
 #include <vector>
 #include "Vertex.h"
 namespace te
 {
-	namespace vk
+	namespace vkh
 	{
 		class VulkanHelper
 		{
 
 
 		public:
-			static VkCommandBuffer beginSingleTimeCommands(
-				VkCommandPool commandPool,
-				VkDevice device
+			static vk::CommandBuffer beginSingleTimeCommands(
+				vk::CommandPool commandPool,
+				vk::Device device
 			);
 
 			static void endSingleTimeCommands(
-				VkCommandBuffer commandBuffer,
-				VkQueue graphicsQueue,
-				VkCommandPool commandPool,
-				VkDevice device
+				vk::CommandBuffer commandBuffer,
+				vk::Queue graphicsQueue,
+				vk::CommandPool commandPool,
+				vk::Device device
 			);
 
 			static void copyBuffer(
-				VkBuffer srcBuffer,
-				VkBuffer dstBuffer,
-				VkDeviceSize size,
-				VkQueue graphicsQueue,
-				VkCommandPool commandPool,
-				VkDevice device
+				vk::Buffer srcBuffer,
+				vk::Buffer dstBuffer,
+				vk::DeviceSize size,
+				vk::Queue graphicsQueue,
+				vk::CommandPool commandPool,
+				vk::Device device
 			);
 
 			//static void pickPhysicalDevice();
-			static std::vector<VkPhysicalDevice> getPhysicalDevices(
-				VkInstance instance
+			static std::vector<vk::PhysicalDevice> getPhysicalDevices(
+				vk::Instance instance
 			);
 
 			static void createVertexBuffer(
 				std::vector<te::Vertex> vertices,
-				VkBuffer& vertexBuffer,
-				VkDeviceMemory& vertexBufferMemory,
-				VkCommandPool commandPool,
-				VkQueue graphicsQueue,
-				VkPhysicalDevice phisycalDevice,
-				VkDevice device
+				vk::Buffer& vertexBuffer,
+				vk::DeviceMemory& vertexBufferMemory,
+				vk::CommandPool commandPool,
+				vk::Queue graphicsQueue,
+				vk::PhysicalDevice phisycalDevice,
+				vk::Device device
 			);
 
 			static void createIndexBuffer(
 				std::vector<uint32_t> indices,
-				VkBuffer& indexBuffer,
-				VkDeviceMemory& indexBufferMemory,
-				VkCommandPool commandPool,
-				VkQueue graphicsQueue,
-				VkPhysicalDevice phisycalDevice,
-				VkDevice device
+				vk::Buffer& indexBuffer,
+				vk::DeviceMemory& indexBufferMemory,
+				vk::CommandPool commandPool,
+				vk::Queue graphicsQueue,
+				vk::PhysicalDevice phisycalDevice,
+				vk::Device device
 			);
 
 
 
 			static void createBuffer(
-				VkDeviceSize size,
-				VkBufferUsageFlags usage,
-				VkMemoryPropertyFlags properties,
-				VkBuffer& buffer,
-				VkDeviceMemory& bufferMemory,
-				VkPhysicalDevice phisycalDevice,
-				VkDevice device
+				vk::DeviceSize size,
+				vk::BufferUsageFlags usage,
+				vk::MemoryPropertyFlags properties,
+				vk::Buffer& buffer,
+				vk::DeviceMemory& bufferMemory,
+				vk::PhysicalDevice phisycalDevice,
+				vk::Device device
 			);
 
 
 
 			static uint32_t findMemoryType(
 				uint32_t typeFilter,
-				VkMemoryPropertyFlags properties,
-				VkPhysicalDevice physicalDevice
+				vk::MemoryPropertyFlags properties,
+				vk::PhysicalDevice physicalDevice
 			);
 
 			static void copyBufferToImage(
-				VkBuffer buffer,
-				VkImage image,
+				vk::Buffer buffer,
+				vk::Image image,
 				uint32_t width,
 				uint32_t height,
-				VkCommandPool commandPool,
-				VkQueue graphicsQueue,
-				VkDevice device
+				vk::CommandPool commandPool,
+				vk::Queue graphicsQueue,
+				vk::Device device
 			);
 		};
 	}

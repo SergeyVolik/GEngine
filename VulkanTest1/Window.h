@@ -3,6 +3,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.hpp>
 #include "WindowManager.h"
 #include <iostream>
 
@@ -49,7 +50,7 @@ namespace te
 		uint32_t getFramebufferHeight();
 		void windowResizing();
 
-		void createSurface(VkInstance instance, VkSurfaceKHR* pSurface, VkAllocationCallbacks* pAllocator);
+		void createSurface(vk::Instance instance, vk::SurfaceKHR* pSurface, vk::AllocationCallbacks* pAllocator);
 		void setFullScreen(bool);
 		void setWindowSize(int width, int height);
 		inline void setTitle(const char* title) {

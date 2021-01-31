@@ -1,9 +1,9 @@
 #ifndef GE_VERTEX
 #define GE_VERTEX
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan.hpp>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -19,7 +19,7 @@ namespace te
         glm::vec3 color;
         glm::vec2 texCoord;
 
-        static VkVertexInputBindingDescription getBindingDescription() {
+        static vk::VertexInputBindingDescription getBindingDescription() {
             VkVertexInputBindingDescription bindingDescription{};
             bindingDescription.binding = 0;
             bindingDescription.stride = sizeof(Vertex);
@@ -28,22 +28,22 @@ namespace te
             return bindingDescription;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-            std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+        static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions() {
+            std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions{};
 
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
-            attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[0].format = vk::Format::eR32G32B32A32Sfloat; /*VK_FORMAT_R32G32B32_SFLOAT*/
             attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
             attributeDescriptions[1].binding = 0;
             attributeDescriptions[1].location = 1;
-            attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[1].format = vk::Format::eR32G32B32A32Sfloat/*VK_FORMAT_R32G32B32_SFLOAT*/;
             attributeDescriptions[1].offset = offsetof(Vertex, color);
 
             attributeDescriptions[2].binding = 0;
             attributeDescriptions[2].location = 2;
-            attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[2].format = vk::Format::eR32G32Sfloat/*VK_FORMAT_R32G32_SFLOAT*/;
             attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
             return attributeDescriptions;

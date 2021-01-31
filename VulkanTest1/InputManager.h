@@ -1,7 +1,7 @@
 #ifndef GE_INPUT_SUBSYSTEM
 #define GE_INPUT_SUBSYSTEM
 
-#define GLFW_INCLUDE_VULKAN
+
 #include <GLFW\glfw3.h>
 #include <vcruntime_string.h>
 #include "Window.h"

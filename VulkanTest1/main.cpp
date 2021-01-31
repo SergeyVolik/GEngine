@@ -100,7 +100,8 @@ private:
         }
 
         // ожидание конца отрисовки об'ектов
-        vkDeviceWaitIdle(te::VulkanRenderManager::getInstance()->device);
+        te::VulkanRenderManager::getInstance()->device.waitIdle();
+        //vkDeviceWaitIdle();
     }
 
 
