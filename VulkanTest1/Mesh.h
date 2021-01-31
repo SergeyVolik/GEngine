@@ -5,7 +5,7 @@
 namespace te
 {
 	struct Vertex;
-	class Mesh
+	struct Mesh
 	{
 		std::vector<te::Vertex> _vertices;
 		std::vector<uint32_t> _indices;

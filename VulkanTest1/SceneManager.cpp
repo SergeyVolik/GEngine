@@ -10,19 +10,7 @@
 te::Scene* te::SceneManager::createScene(const char* name) {
 
     auto scene = new te::Scene(name);
-    auto camera = new te::Entity();
-    auto cameraComp = new te::Camera();
-    camera->addComponent(cameraComp);
-  
-
-    scene->addEntity(camera);
-
-    auto renderer = new te::Entity();
-    auto meshRenderer = new te::Renderer();
-    renderer->addComponent(meshRenderer);
-
-    scene->addEntity(renderer);
-
+   
     _scenes.push_back(scene);
     return scene;
 }

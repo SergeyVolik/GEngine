@@ -6,7 +6,7 @@
 #include "Vertex.h"
 namespace te
 {
-	 //Vertex;
+	struct Mesh;
 	class AssetsLoader : public te::Singleton<AssetsLoader>
 	{
 	public:
@@ -18,7 +18,8 @@ namespace te
 		{
 			_instance = new AssetsLoader();
 		}
-		void loadModel(const char* path, std::vector<te::Vertex> &vertices, std::vector<uint32_t> &indices);
+		
+		te::Mesh loadModel(const char* path);
 		void loadTextureToGPU(const char* path, VkImage image);
 
 	};

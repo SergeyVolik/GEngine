@@ -19,10 +19,11 @@ namespace te
 		VkDeviceMemory _vertexBufferMemory;
 		VkBuffer _indexBuffer;
 		VkDeviceMemory _indexBufferMemory;
-
 		
-
 		Mesh* _mesh;
+
+
+
 	public:
 		Renderer() {}
 		~Renderer();

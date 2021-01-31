@@ -55,6 +55,9 @@
     <Filter Include="Файлы заголовков\Systems\Resources">
       <UniqueIdentifier>{90752a7d-11ae-4b53-9270-f512fc57bca0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы заголовков\Systems\Scene\EntityComponentSystem\Components">
+      <UniqueIdentifier>{879ef8a8-f916-4964-974a-dc557a976cf4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -134,22 +137,7 @@
     <ClInclude Include="Vertex.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Entity.h">
-      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
-    </ClInclude>
     <ClInclude Include="Component.h">
-      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer.h">
-      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="Transform.h">
-      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
       <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem</Filter>
     </ClInclude>
     <ClInclude Include="Mesh.h">
@@ -169,6 +157,24 @@
     </ClInclude>
     <ClInclude Include="AssetsLoader.h">
       <Filter>Файлы заголовков\Systems\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="SimplerModelTransformations.h">
+      <Filter>Файлы заголовков\Systems\Scene\EntityComponentSystem\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

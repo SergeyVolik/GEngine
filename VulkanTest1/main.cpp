@@ -1,6 +1,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYOBJLOADER_IMPLEMENTATION
 
+
+
 #include "VulkanRenderManager.h"
 #include "WindowManager.h"
 #include "Window.h"
@@ -8,6 +10,16 @@
 #include "SceneManager.h"
 #include "Time.h"
 #include "AssetsLoader.h"
+#include "Scene.h"
+#include "Entity.h";
+#include "Camera.h"
+#include "Renderer.h"
+#include "AssetsLoader.h"
+#include "SimplerModelTransformations.h"
+
+
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
 
 class GEngine {
 
@@ -35,7 +47,29 @@ private:
         te::VulkanRenderManager::initialize(window);
        
         te::SceneManager::initialize();
-        te::SceneManager::getInstance()->createScene("demo");
+        te::Scene* currentScene = te::SceneManager::getInstance()->createScene("demo");
+
+       /* te::Entity* cameraHolder = new te::Entity();
+        te::Camera* camComp = new te::Camera();
+        cameraHolder->addComponent(camComp);
+
+
+        te::Entity* meshHolder = new te::Entity();
+        te::Renderer* rendererComp = new te::Renderer();
+       
+        rendererComp->setMesh(te::AssetsLoader::getInstance()->loadModel())
+        meshHolder->addComponent(rendererComp);
+
+        te::SimplerModelTransformations* smtComp = new te::SimplerModelTransformations();
+        meshHolder->addComponent(smtComp);
+
+
+        currentScene->addEntity(cameraHolder);
+        currentScene->setMainCamera(camComp);
+
+        currentScene->addEntity(meshHolder);*/
+
+        
        
     }
 

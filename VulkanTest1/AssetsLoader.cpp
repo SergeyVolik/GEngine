@@ -4,10 +4,13 @@
 #include <tiny_obj_loader.h>
 #include <stdexcept>
 #include <unordered_map>
+#include "Mesh.h"
 
-
-void te::AssetsLoader::loadModel(const char* path, std::vector<te::Vertex>& vertices, std::vector<uint32_t>& indices)
+te::Mesh te::AssetsLoader::loadModel(const char* path)
 {
+    std::vector<te::Vertex> vertices;
+    std::vector<uint32_t> indices;
+
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -45,6 +48,8 @@ void te::AssetsLoader::loadModel(const char* path, std::vector<te::Vertex>& vert
         }
         break;
     }
+
+    return Mesh(indices, vertices);
 }
 
 void te::AssetsLoader::loadTextureToGPU(const char* path, VkImage image)

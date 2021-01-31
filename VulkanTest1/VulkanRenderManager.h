@@ -186,6 +186,8 @@ namespace te
         void createTextureSampler();
         void loadModel();
        
+        void createVulkanMemoryAllocator();
+
         void createUniformBuffers();
         void createDescriptorPool();
         void createDescriptorSets();
@@ -244,6 +246,8 @@ namespace te
             _instance->createSurface();
             _instance->pickPhysicalDevice();
             _instance->createLogicalDevice();
+
+            _instance->createVulkanMemoryAllocator();
             _instance->createSwapChain();
             _instance->createSwapChainImageViews();
             _instance->createRenderPass();
@@ -272,6 +276,7 @@ namespace te
                 _instance->_indexBuffer,
                 _instance->_indexBufferMemory
             );
+
             _instance->createUniformBuffers();
             _instance->createDescriptorPool();
             _instance->createDescriptorSets();
