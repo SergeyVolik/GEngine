@@ -1,8 +1,6 @@
 #ifndef GE_VERTEX
 #define GE_VERTEX
 
-
-#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 
 #define GLM_FORCE_RADIANS
@@ -20,10 +18,10 @@ namespace te
         glm::vec2 texCoord;
 
         static vk::VertexInputBindingDescription getBindingDescription() {
-            VkVertexInputBindingDescription bindingDescription{};
+            vk::VertexInputBindingDescription bindingDescription{};
             bindingDescription.binding = 0;
             bindingDescription.stride = sizeof(Vertex);
-            bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            bindingDescription.inputRate = vk::VertexInputRate::eVertex/*VK_VERTEX_INPUT_RATE_VERTEX*/;
 
             return bindingDescription;
         }

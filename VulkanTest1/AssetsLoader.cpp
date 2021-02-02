@@ -52,7 +52,7 @@ te::Mesh te::AssetsLoader::loadModel(const char* path)
     return Mesh(indices, vertices);
 }
 
-void te::AssetsLoader::loadTextureToGPU(const char* path, VkImage image)
+void te::AssetsLoader::loadTextureToGPU(const char* path, vk::Image image)
 {
 
 }

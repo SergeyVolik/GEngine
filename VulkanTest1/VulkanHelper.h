@@ -1,7 +1,6 @@
 #ifndef G_VULKAN_HELPER
 #define G_VULKAN_HELPER
 
-#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include "Vertex.h"

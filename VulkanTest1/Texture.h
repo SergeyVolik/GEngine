@@ -3,17 +3,17 @@
 
 
 #include <GLFW/glfw3.h>
-
+#include <vulkan/vulkan.hpp>
 namespace te
 {
 	struct Texture {
 
 	public:
-		VkDevice memoryHolderDevice;
+		vk::Device memoryHolderDevice;
 
-		VkImageView textureView;
-		VkImage texture;
-		VkDeviceMemory textureDeviceMemory;
+		vk::ImageView textureView;
+		vk::Image texture;
+		vk::DeviceMemory textureDeviceMemory;
 
 		Texture(char* path)
 		{

@@ -20,14 +20,14 @@ namespace te
             if (WindowManager::isInitialized())
             {
                 glfwTerminate();
-                delete _instance;
+                delete instance;
             }
         };
         static void initialize() {
             if (!WindowManager::isInitialized())
             {
                 glfwInit();
-                _instance = new WindowManager();
+                instance = new WindowManager();
                 glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             }
         };

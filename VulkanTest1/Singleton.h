@@ -10,11 +10,11 @@ namespace te
 	protected:
 
 		Singleton() {}
-		inline static T* _instance = nullptr;
+		inline static T* instance = nullptr;
 	public:
 
 		static bool isInitialized() {
-			return _instance != nullptr;
+			return instance != nullptr;
 		};
 
 		/**
@@ -26,7 +26,7 @@ namespace te
 
 		static T* getInstance() {
 
-			return _instance;
+			return instance;
 		};
 
 	};

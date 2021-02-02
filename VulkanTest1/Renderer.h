@@ -4,9 +4,7 @@
 #include "Component.h"
 #include <vector>
 
-
-#include <GLFW/glfw3.h>
-
+#include <vulkan/vulkan.hpp>
 namespace te
 {
 	class Mesh;
@@ -15,10 +13,10 @@ namespace te
 
 	class Renderer : public te::Component
 	{
-		VkBuffer _vertexBuffer;
-		VkDeviceMemory _vertexBufferMemory;
-		VkBuffer _indexBuffer;
-		VkDeviceMemory _indexBufferMemory;
+		vk::Buffer _vertexBuffer;
+		vk::DeviceMemory _vertexBufferMemory;
+		vk::Buffer _indexBuffer;
+		vk::DeviceMemory _indexBufferMemory;
 		
 		Mesh* _mesh;
 

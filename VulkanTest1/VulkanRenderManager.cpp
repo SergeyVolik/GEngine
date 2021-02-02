@@ -5,7 +5,7 @@
 #include "VulkanHelper.h"
 #include "AssetsLoader.h"
 #include "Mesh.h"
-#include <vk_mem_alloc.h>
+//#include <vk_mem_alloc.h>
 #include <array>
 #pragma region vulkan instancing
 
@@ -21,7 +21,7 @@ void te::VulkanRenderManager::createInstance()
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_2;
 
     vk::InstanceCreateInfo createInfo{};   
     createInfo.pApplicationInfo = &appInfo;
@@ -36,7 +36,9 @@ void te::VulkanRenderManager::createInstance()
         createInfo.ppEnabledLayerNames = validationLayers.data();
 
         populateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = (vk::DebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+        createInfo.pNext = &debugCreateInfo;
+       
+
     }
     else {
         createInfo.enabledLayerCount = 0;
@@ -44,7 +46,7 @@ void te::VulkanRenderManager::createInstance()
         createInfo.pNext = nullptr;
     }
 
-    if (vk::createInstance(&createInfo, nullptr, &instance) != vk::Result::eSuccess) {
+    if (vk::createInstance(&createInfo, nullptr, &vulkanInstance) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create instance!");
     }
 }
@@ -57,7 +59,7 @@ void te::VulkanRenderManager::createInstance()
 void te::VulkanRenderManager::pickPhysicalDevice()
 {
 
-    std::vector<vk::PhysicalDevice> devices = te::vkh::VulkanHelper::getPhysicalDevices(instance);
+    std::vector<vk::PhysicalDevice> devices = te::vkh::VulkanHelper::getPhysicalDevices(vulkanInstance);
 
 
     for (const auto& device : devices) {
@@ -106,6 +108,7 @@ void te::VulkanRenderManager::createLogicalDevice()
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
+       
     }
     else {
         createInfo.enabledLayerCount = 0;
@@ -121,8 +124,98 @@ void te::VulkanRenderManager::createLogicalDevice()
 }
 #pragma endregion
 
-#pragma region vulkan validation layer (debug)
+void te::VulkanRenderManager::initialize(te::Window* wnd) {
 
+
+    instance = new VulkanRenderManager();
+    instance->window = wnd;
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+   
+    instance->createInstance();
+
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance->vulkanInstance);
+
+    instance->setupDebugMessenger();
+    instance->createSurface();
+    instance->pickPhysicalDevice();
+    instance->createLogicalDevice();
+
+    instance->createVulkanMemoryAllocator();
+    instance->createSwapChain();
+    instance->createSwapChainImageViews();
+    instance->createRenderPass();
+    instance->createDescriptorSetLayout();
+    instance->createGraphicsPipeline();
+    instance->createCommandPool();
+    instance->createDepthResources();
+    instance->createFramebuffers();
+    instance->createTextureImage(instance->textureImage, instance->mipLevels);
+    instance->createTextureImageView(instance->textureImageView, instance->textureImage, instance->mipLevels);
+    instance->createTextureSampler();
+    instance->loadModel();
+    instance->gObject = new Entity();
+    instance->gTransform = (Transform*)instance->gObject->getComponent(typeid(Transform).hash_code());
+    instance->gTransform->onAwake();
+
+    instance->createVertexBuffer(
+        instance->vertices,
+        instance->vertexBuffer,
+        instance->vertexBufferMemory
+
+    );
+
+    instance->createIndexBuffer(
+        instance->_indices,
+        instance->_indexBuffer,
+        instance->_indexBufferMemory
+    );
+
+    instance->createUniformBuffers();
+    instance->createDescriptorPool();
+    instance->createDescriptorSets();
+    instance->createCommandBuffers();
+    instance->createSyncObjects();
+
+}
+void te::VulkanRenderManager::terminate()
+{
+    instance->cleanupSwapChain();
+
+    // удаление даных о текстуре в  GPU
+    instance->device.destroySampler(instance->textureSampler, nullptr);
+    instance->device.destroyImageView(instance->textureImageView, nullptr);
+    instance->device.destroyImage(instance->textureImage, nullptr);
+    instance->device.freeMemory(instance->textureImageMemory, nullptr);
+
+
+    instance->device.destroyDescriptorSetLayout(instance->descriptorSetLayout, nullptr);
+
+    instance->device.destroyBuffer(instance->_indexBuffer, nullptr);
+    instance->device.freeMemory(instance->_indexBufferMemory, nullptr);
+
+    instance->device.destroyBuffer(instance->vertexBuffer, nullptr);
+    instance->device.freeMemory(instance->vertexBufferMemory, nullptr);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        instance->device.destroySemaphore(instance->renderFinishedSemaphores[i], nullptr);
+        instance->device.destroySemaphore(instance->imageAvailableSemaphores[i], nullptr);
+        instance->device.destroyFence(instance->inFlightFences[i], nullptr);
+    }
+
+    instance->device.destroyCommandPool(instance->commandPool, nullptr);
+
+    instance->device.destroy();
+
+    if (enableValidationLayers) {
+        instance->vulkanInstance.destroyDebugUtilsMessengerEXT(instance->debugMessenger, nullptr);
+    }
+
+
+    instance->vulkanInstance.destroySurfaceKHR(instance->surface, nullptr);
+    instance->vulkanInstance.destroy();
+
+}
+#pragma region vulkan validation layer (debug)
 void te::VulkanRenderManager::setupDebugMessenger()
 {
     if (!enableValidationLayers) return;
@@ -130,9 +223,10 @@ void te::VulkanRenderManager::setupDebugMessenger()
     vk::DebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (instance.createDebugUtilsMessengerEXT(&createInfo, nullptr, &debugMessenger) != vk::Result::eSuccess) {
+    if (vulkanInstance.createDebugUtilsMessengerEXT(&createInfo, nullptr, &debugMessenger) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to set up debug messenger!");
     }
+
 }
 
 #pragma endregion
@@ -141,7 +235,7 @@ void te::VulkanRenderManager::setupDebugMessenger()
 
 void te::VulkanRenderManager::createSurface()
 {
-    window->createSurface(instance, &surface, nullptr);
+    window->createSurface(vulkanInstance, &surface, nullptr);
 }
 
 void te::VulkanRenderManager::createSwapChain()
@@ -166,7 +260,7 @@ void te::VulkanRenderManager::createSwapChain()
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;// VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -177,11 +271,11 @@ void te::VulkanRenderManager::createSwapChain()
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
     }
     else {
-        createInfo.imageSharingMode = vk::SharingMode::eExclusive;// VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.imageSharingMode = vk::SharingMode::eExclusive;
     }
 
     createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-    createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;//  VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
 
@@ -189,10 +283,7 @@ void te::VulkanRenderManager::createSwapChain()
         throw std::runtime_error("failed to create swap chain!");
     }
 
-    auto swapChainImages = device.getSwapchainImagesKHR(swapChain);
-    /*device.getSwapchainImagesKHR(swapChain, &imageCount, nullptr);
-    swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());*/
+    swapChainImages = device.getSwapchainImagesKHR(swapChain);
 
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
@@ -203,7 +294,7 @@ void te::VulkanRenderManager::createSwapChainImageViews()
     swapChainImageViews.resize(swapChainImages.size());
 
     for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-        swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor /*VK_IMAGE_ASPECT_COLOR_BIT*/, 1);
+        swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor, 1);
     }
 }
 
@@ -219,34 +310,34 @@ void te::VulkanRenderManager::createRenderPass()
 {
     vk::AttachmentDescription colorAttachment{};
     colorAttachment.format = swapChainImageFormat;
-    colorAttachment.samples = vk::SampleCountFlagBits::e1; /*VK_SAMPLE_COUNT_1_BIT*/
-    colorAttachment.loadOp = vk::AttachmentLoadOp::eClear; //VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;// VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eLoad;//VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare; //VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = vk::ImageLayout::eUndefined; //VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.samples = vk::SampleCountFlagBits::e1;
+    colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+    colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+    colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+    colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+    colorAttachment.initialLayout = vk::ImageLayout::eUndefined; 
+    colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
     vk::AttachmentDescription depthAttachment{};
     depthAttachment.format = findDepthFormat();
-    depthAttachment.samples = vk::SampleCountFlagBits::e1;//VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;//VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;//VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;//= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;// VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = vk::ImageLayout::eUndefined;//VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;//VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachment.samples = vk::SampleCountFlagBits::e1;
+    depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+    depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+    depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+    depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+    depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
+    depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
     vk::AttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
     vk::AttachmentReference depthAttachmentRef{};
     depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;//VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
     vk::SubpassDescription subpass{};
-    subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;//VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
@@ -254,10 +345,10 @@ void te::VulkanRenderManager::createRenderPass()
     vk::SubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0;
-    dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests; //VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    //dependency.srcAccessMask = vk::AccessFlagBits:://0; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;//VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite;// VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests; 
+    dependency.srcAccessMask = {};
+    dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+    dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 
     std::array<vk::AttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
     vk::RenderPassCreateInfo renderPassInfo{};
@@ -279,16 +370,16 @@ void te::VulkanRenderManager::createDescriptorSetLayout()
     vk::DescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;// VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
     uboLayoutBinding.pImmutableSamplers = nullptr;
-    uboLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;// VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
     vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
     samplerLayoutBinding.binding = 1;
     samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;////VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
-    samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;//VK_SHADER_STAGE_FRAGMENT_BIT;
+    samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
     std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
     vk::DescriptorSetLayoutCreateInfo layoutInfo{}; 
@@ -310,13 +401,13 @@ void te::VulkanRenderManager::createGraphicsPipeline()
 
     vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
    
-    vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;// VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
     vertShaderStageInfo.module = vertShaderModule;
     vertShaderStageInfo.pName = "main";
 
     vk::PipelineShaderStageCreateInfo fragShaderStageInfo{};
     
-    fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;//VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
@@ -334,7 +425,7 @@ void te::VulkanRenderManager::createGraphicsPipeline()
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
   
-    inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;//VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
     vk::Viewport viewport{};
@@ -360,22 +451,22 @@ void te::VulkanRenderManager::createGraphicsPipeline()
 
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = vk::PolygonMode::eFill;//VK_POLYGON_MODE_FILL;
+    rasterizer.polygonMode = vk::PolygonMode::eFill;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = vk::CullModeFlagBits::eBack;//VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = vk::FrontFace::eCounterClockwise;///VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer.cullMode = vk::CullModeFlagBits::eBack;
+    rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     vk::PipelineMultisampleStateCreateInfo multisampling{};
    
     multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;//VK_SAMPLE_COUNT_1_BIT;
+    multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
 
     vk::PipelineDepthStencilStateCreateInfo depthStencil{};
   
     depthStencil.depthTestEnable = VK_TRUE;
     depthStencil.depthWriteEnable = VK_TRUE;
-    depthStencil.depthCompareOp = vk::CompareOp::eLess;//VK_COMPARE_OP_LESS;
+    depthStencil.depthCompareOp = vk::CompareOp::eLess;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
@@ -384,13 +475,13 @@ void te::VulkanRenderManager::createGraphicsPipeline()
                                             vk::ColorComponentFlagBits::eG |
                                             vk::ColorComponentFlagBits::eB |
                                             vk::ColorComponentFlagBits::eA;
-        //VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+       
     colorBlendAttachment.blendEnable = VK_FALSE;
 
     vk::PipelineColorBlendStateCreateInfo colorBlending{};
   
     colorBlending.logicOpEnable = VK_FALSE;
-    colorBlending.logicOp = vk::LogicOp::eCopy;// VK_LOGIC_OP_COPY;
+    colorBlending.logicOp = vk::LogicOp::eCopy;
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
     colorBlending.blendConstants[0] = 0.0f;
@@ -421,8 +512,8 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
-    //pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //device.createGraphicsPipelines()
+    pipelineInfo.basePipelineHandle = nullptr;
+
     if (device.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
@@ -451,14 +542,14 @@ void te::VulkanRenderManager::createDepthResources()
     createImage(
         swapChainExtent.width,
         swapChainExtent.height,
-        1, depthFormat, vk::ImageTiling::eOptimal /*VK_IMAGE_TILING_OPTIMAL*/,
-        vk::ImageUsageFlagBits::eDepthStencilAttachment /*VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT*/,
-        vk::MemoryPropertyFlagBits::eDeviceLocal/*VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT*/,
+        1, depthFormat, vk::ImageTiling::eOptimal,
+        vk::ImageUsageFlagBits::eDepthStencilAttachment,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
         depthImage, depthImageMemory
     );
     depthImageView = createImageView(
         depthImage, depthFormat,
-        vk::ImageAspectFlagBits::eDepth /*VK_IMAGE_ASPECT_DEPTH_BIT*/, 1);
+        vk::ImageAspectFlagBits::eDepth, 1);
 }
 
 void te::VulkanRenderManager::createFramebuffers()
@@ -504,35 +595,34 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
     vk::DeviceMemory stagingBufferMemory;
     te::vkh::VulkanHelper::createBuffer(
         imageSize,
-        vk::BufferUsageFlagBits::eTransferSrc /*VK_BUFFER_USAGE_TRANSFER_SRC_BIT*/,
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-        /*VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT*/,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
         stagingBuffer, stagingBufferMemory, physicalDevice, device);
 
     void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+    device.mapMemory(stagingBufferMemory, 0, imageSize, {}, &data);
     memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(device, stagingBufferMemory);
+    device.unmapMemory(stagingBufferMemory);
 
     stbi_image_free(pixels);
 
     createImage(
         texWidth, texHeight, mipLevels,
-        vk::Format::eR8G8B8A8Srgb/*VK_FORMAT_R8G8B8A8_SRGB*/,
-        vk::ImageTiling::eOptimal/*VK_IMAGE_TILING_OPTIMAL*/,
-        vk::ImageUsageFlagBits::eTransferSrc/*VK_IMAGE_USAGE_TRANSFER_SRC_BIT*/ |
-        vk::ImageUsageFlagBits::eTransferDst/*VK_IMAGE_USAGE_TRANSFER_DST_BIT*/ |
-        vk::ImageUsageFlagBits::eSampled/*VK_IMAGE_USAGE_SAMPLED_BIT*/,
-        vk::MemoryPropertyFlagBits::eDeviceLocal/*VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT*/,
+        vk::Format::eR8G8B8A8Srgb,
+        vk::ImageTiling::eOptimal,
+        vk::ImageUsageFlagBits::eTransferSrc |
+        vk::ImageUsageFlagBits::eTransferDst |
+        vk::ImageUsageFlagBits::eSampled,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
         textureImage, textureImageMemory
     );
 
 
     transitionImageLayout(
         textureImage,
-        vk::Format::eR8G8B8A8Srgb/*VK_FORMAT_R8G8B8A8_SRGB*/,
-        vk::ImageLayout::eUndefined/*VK_IMAGE_LAYOUT_UNDEFINED*/,
-        vk::ImageLayout::eTransferDstOptimal/*VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL*/,
+        vk::Format::eR8G8B8A8Srgb,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eTransferDstOptimal,
         mipLevels
     );
 
@@ -545,14 +635,13 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
         graphicsQueue,
         device
     );
-    //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
-
+   
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 
     generateMipmaps(
         textureImage,
-        vk::Format::eR8G8B8A8Srgb/*VK_FORMAT_R8G8B8A8_SRGB*/,
+        vk::Format::eR8G8B8A8Srgb,
         texWidth,
         texHeight,
         mipLevels
@@ -563,8 +652,8 @@ void te::VulkanRenderManager::createTextureImageView(vk::ImageView& imgView, con
 {
     imgView = createImageView(
         textureImage,
-        vk::Format::eR8G8B8A8Srgb/*VK_FORMAT_R8G8B8A8_SRGB*/,
-        vk::ImageAspectFlagBits::eColor/*VK_IMAGE_ASPECT_COLOR_BIT*/,
+        vk::Format::eR8G8B8A8Srgb,
+        vk::ImageAspectFlagBits::eColor,
         mipLevels
     );
 }
@@ -576,18 +665,18 @@ void te::VulkanRenderManager::createTextureSampler()
 
     vk::SamplerCreateInfo samplerInfo{};
   
-    samplerInfo.magFilter = vk::Filter::eLinear;//VK_FILTER_LINEAR;
-    samplerInfo.minFilter = vk::Filter::eLinear;//VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;////VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat; //VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat; //VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.magFilter = vk::Filter::eLinear;
+    samplerInfo.minFilter = vk::Filter::eLinear;
+    samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+    samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+    samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
     samplerInfo.anisotropyEnable = VK_TRUE;
     samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;//VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = vk::CompareOp::eAlways;//VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;//VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.compareOp = vk::CompareOp::eAlways;;
+    samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;;
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0.0f;
@@ -599,10 +688,9 @@ void te::VulkanRenderManager::createTextureSampler()
 
 void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
 {
-    vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(imageFormat);
-    //; vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
+    vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(imageFormat);  
 
-    if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear /*VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT*/)) {
+    if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
@@ -613,7 +701,7 @@ void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageF
     barrier.image = image;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;// VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
     barrier.subresourceRange.levelCount = 1;
@@ -623,37 +711,28 @@ void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageF
 
     for (uint32_t i = 1; i < mipLevels; i++) {
         barrier.subresourceRange.baseMipLevel = i - 1;
-        barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;//VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;//VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;//VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;//VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+        barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+        barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
 
-
-       
-        
-            //commandBuffer.pipelineBarrie(
-            //vk::PipelineStageFlagBits::eTransfer/*VK_PIPELINE_STAGE_TRANSFER_BIT*/,
-            //vk::PipelineStageFlagBits::eTransfer  /*VK_PIPELINE_STAGE_TRANSFER_BIT*/, 0,
-            //0, nullptr,
-            //0, nullptr,
-            //1, &barrier);
-            commandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::PipelineStageFlagBits::eTransfer,
-                vk::DependencyFlagBits::eByRegion,//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! было 0
-                0, nullptr, 0,  nullptr, 1, &barrier
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::PipelineStageFlagBits::eTransfer,
+            {}, 0, nullptr, 0,  nullptr, 1, &barrier
                 
-            );
+        );
+
         vk::ImageBlit blit{};
         blit.srcOffsets[0] = vk::Offset3D{ 0, 0, 0 };
         blit.srcOffsets[1] = vk::Offset3D{ mipWidth, mipHeight, 1 };
-        blit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor; /*VK_IMAGE_ASPECT_COLOR_BIT*/;
+        blit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor; ;
         blit.srcSubresource.mipLevel = i - 1;
         blit.srcSubresource.baseArrayLayer = 0;
         blit.srcSubresource.layerCount = 1;
         blit.dstOffsets[0] = vk::Offset3D{ 0, 0, 0 };
         blit.dstOffsets[1] = vk::Offset3D{ mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
-        blit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor/*VK_IMAGE_ASPECT_COLOR_BIT*/;
+        blit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
         blit.dstSubresource.mipLevel = i;
         blit.dstSubresource.baseArrayLayer = 0;
         blit.dstSubresource.layerCount = 1;
@@ -664,27 +743,18 @@ void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageF
             1, &blit, vk::Filter::eLinear
         );
 
-       /* vkCmdBlitImage(commandBuffer,
-            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &blit,
-            VK_FILTER_LINEAR);*/
 
-        barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal; /*VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL*/;
-        barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;/*VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL*/;
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;/*VK_ACCESS_TRANSFER_READ_BIT*/;
-        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;/*VK_ACCESS_SHADER_READ_BIT*/;
 
-      /*  vkCmdPipelineBarrier(commandBuffer,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier);*/
+        barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+        barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+        barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+    
 
         commandBuffer.pipelineBarrier(
             vk::PipelineStageFlagBits::eTransfer,
             vk::PipelineStageFlagBits::eFragmentShader,
-            vk::DependencyFlagBits::eByRegion,//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! было 0
+            {},
             0, nullptr, 0, nullptr, 1, &barrier
 
         );
@@ -694,23 +764,16 @@ void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageF
     }
 
     barrier.subresourceRange.baseMipLevel = mipLevels - 1;
-    barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal; /*VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL*/
-    barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;/*VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL*/
-    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite; /*VK_ACCESS_TRANSFER_WRITE_BIT*/
-    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;/*VK_ACCESS_SHADER_READ_BIT*/
+    barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal; 
+    barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite; 
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-  /*  vkCmdPipelineBarrier(commandBuffer,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier);*/
 
     commandBuffer.pipelineBarrier(
         vk::PipelineStageFlagBits::eTransfer,
         vk::PipelineStageFlagBits::eFragmentShader,
-        vk::DependencyFlagBits::eByRegion,//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! было 0
-        0, nullptr, 0, nullptr, 1, &barrier
-
+        {}, 0, nullptr, 0, nullptr, 1, &barrier
     );
 
     te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
@@ -727,7 +790,7 @@ void te::VulkanRenderManager::transitionImageLayout(vk::Image image, vk::Format 
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = image;
-    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;/*VK_IMAGE_ASPECT_COLOR_BIT*/;
+    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = mipLevels;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -736,39 +799,30 @@ void te::VulkanRenderManager::transitionImageLayout(vk::Image image, vk::Format 
     vk::PipelineStageFlags sourceStage;
     vk::PipelineStageFlags destinationStage;
 
-    if (oldLayout == vk::ImageLayout::eUndefined/*VK_IMAGE_LAYOUT_UNDEFINED*/ &&
-        newLayout == vk::ImageLayout::eTransferDstOptimal/*VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL*/) {
-        //barrier.srcAccessMask = 0; !!!!!!!!!! было 0
-        barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;// VK_ACCESS_TRANSFER_WRITE_BIT;
+    if (oldLayout == vk::ImageLayout::eUndefined &&
+        newLayout == vk::ImageLayout::eTransferDstOptimal) {
+        barrier.srcAccessMask = {}; 
+        barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
 
-        sourceStage = vk::PipelineStageFlagBits::eTopOfPipe; /*VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT*/
-        destinationStage = vk::PipelineStageFlagBits::eTransfer;/*VK_PIPELINE_STAGE_TRANSFER_BIT*/
+        sourceStage = vk::PipelineStageFlagBits::eTopOfPipe; 
+        destinationStage = vk::PipelineStageFlagBits::eTransfer;
     }
-    else if (oldLayout == vk::ImageLayout::eTransferDstOptimal/*VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL*/ &&
-        newLayout == vk::ImageLayout::eShaderReadOnlyOptimal/*VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL*/) {
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;/*VK_ACCESS_TRANSFER_WRITE_BIT*/
-        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;/*VK_ACCESS_SHADER_READ_BIT*/
+    else if (oldLayout == vk::ImageLayout::eTransferDstOptimal &&
+        newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-        sourceStage = vk::PipelineStageFlagBits::eTransfer;/*VK_PIPELINE_STAGE_TRANSFER_BIT*/;
-        destinationStage = vk::PipelineStageFlagBits::eFragmentShader;/*VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT*/;
+        sourceStage = vk::PipelineStageFlagBits::eTransfer;
+        destinationStage = vk::PipelineStageFlagBits::eFragmentShader;;
     }
     else {
         throw std::invalid_argument("unsupported layout transition!");
     }
 
-   /* vkCmdPipelineBarrier(
-        commandBuffer,
-        sourceStage, destinationStage,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier
-    );*/
-
     commandBuffer.pipelineBarrier(
         sourceStage,
         destinationStage,
-        vk::DependencyFlagBits::eByRegion,//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! было 0
+        {},
         0, nullptr, 0, nullptr, 1, &barrier
 
     );
@@ -782,7 +836,7 @@ vk::ImageView te::VulkanRenderManager::createImageView(vk::Image image, vk::Form
     vk::ImageViewCreateInfo viewInfo{};
   
     viewInfo.image = image;
-    viewInfo.viewType = vk::ImageViewType::e2D; /*VK_IMAGE_VIEW_TYPE_2D*/
+    viewInfo.viewType = vk::ImageViewType::e2D;
     viewInfo.format = format;
     viewInfo.subresourceRange.aspectMask = aspectFlags;
     viewInfo.subresourceRange.baseMipLevel = 0;
@@ -837,9 +891,9 @@ void te::VulkanRenderManager::createUniformBuffers()
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         te::vkh::VulkanHelper::createBuffer(
             bufferSize,
-            vk::BufferUsageFlagBits::eUniformBuffer /*VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT*/,
-            vk::MemoryPropertyFlagBits::eHostVisible /*VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT*/ |
-            vk::MemoryPropertyFlagBits::eHostCoherent/*VK_MEMORY_PROPERTY_HOST_COHERENT_BIT*/,
+            vk::BufferUsageFlagBits::eUniformBuffer,
+            vk::MemoryPropertyFlagBits::eHostVisible  |
+            vk::MemoryPropertyFlagBits::eHostCoherent,
             uniformBuffers[i], uniformBuffersMemory[i], physicalDevice, device
         );
     }
@@ -848,9 +902,9 @@ void te::VulkanRenderManager::createUniformBuffers()
 void te::VulkanRenderManager::createDescriptorPool()
 {
     std::array<vk::DescriptorPoolSize, 2> poolSizes{};
-    poolSizes[0].type = vk::DescriptorType::eUniformBuffer;/*VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER*/
+    poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
-    poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;/*VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER*/
+    poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
     poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
 
     vk::DescriptorPoolCreateInfo poolInfo{};
@@ -885,25 +939,23 @@ void te::VulkanRenderManager::createDescriptorSets()
         bufferInfo.range = sizeof(UniformBufferObject);
 
         vk::DescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal; /*VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL*/
+        imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
         imageInfo.imageView = textureImageView;
         imageInfo.sampler = textureSampler;
 
         std::array<vk::WriteDescriptorSet, 2> descriptorWrites{};
 
-        //descriptorWrites[0].sType = /*VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET*/;
         descriptorWrites[0].dstSet = descriptorSets[i];
         descriptorWrites[0].dstBinding = 0;
         descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer; /*VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER*/;
+        descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-        //descriptorWrites[1].sType = /*VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET*/;
         descriptorWrites[1].dstSet = descriptorSets[i];
         descriptorWrites[1].dstBinding = 1;
         descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;/*VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER*/;
+        descriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;;
         descriptorWrites[1].descriptorCount = 1;
         descriptorWrites[1].pImageInfo = &imageInfo;
 
@@ -916,9 +968,8 @@ void te::VulkanRenderManager::createCommandBuffers()
     commandBuffers.resize(swapChainFramebuffers.size());
 
     vk::CommandBufferAllocateInfo allocInfo{};
-    //allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = commandPool;
-    allocInfo.level = vk::CommandBufferLevel::ePrimary;/*VK_COMMAND_BUFFER_LEVEL_PRIMARY*/;
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;;
     allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
     if (device.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess) {
@@ -927,14 +978,12 @@ void te::VulkanRenderManager::createCommandBuffers()
 
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         vk::CommandBufferBeginInfo beginInfo{};
-        //beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
         if (commandBuffers[i].begin(&beginInfo) != vk::Result::eSuccess) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
         vk::RenderPassBeginInfo renderPassInfo{};
-        //renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = swapChainFramebuffers[i];
         renderPassInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
@@ -947,33 +996,26 @@ void te::VulkanRenderManager::createCommandBuffers()
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
-        commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline /*VK_SUBPASS_CONTENTS_INLINE*/);
+        commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
 
-        commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics /*VK_PIPELINE_BIND_POINT_GRAPHICS*/, graphicsPipeline);
-        //vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
         vk::Buffer vertexBuffers[] = { vertexBuffer };
         vk::DeviceSize offsets[] = { 0 };
 
         commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
-        //vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
         commandBuffers[i].bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint32);
-        //vkCmdBindIndexBuffer(commandBuffers[i], _indexBuffer, 0, VK_INDEX_TYPE_UINT32);
         
         commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-        //vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
         commandBuffers[i].drawIndexed(static_cast<uint32_t>(_indices.size()), 1, 0, 0, 0);
-        //vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(_indices.size()), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[i]);
 
         
         commandBuffers[i].end();
-       /* if (vkEndCommandBuffer(commandBuffers[i]) != vk::Result::eSuccess) {
-            throw std::runtime_error("failed to record command buffer!");
-        }*/
+
     }
 }
 
@@ -985,11 +1027,10 @@ void te::VulkanRenderManager::createSyncObjects()
     imagesInFlight.resize(swapChainImages.size(), nullptr);
 
     vk::SemaphoreCreateInfo semaphoreInfo{};
-    //semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     vk::FenceCreateInfo fenceInfo{};
-    //fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled; /*VK_FENCE_CREATE_SIGNALED_BIT*/
+  
+    fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         if (device.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess ||
@@ -1021,9 +1062,10 @@ void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
     ubo.proj[1][1] *= -1;*/
 
     void* data;
-    vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+    
+    device.mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo), {}, &data);
     memcpy(data, &ubo, sizeof(ubo));
-    vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
+    device.unmapMemory(uniformBuffersMemory[currentImage]);
 }
 
 
@@ -1033,15 +1075,15 @@ void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
 
 void te::VulkanRenderManager::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
 {
-    //createInfo = vk::DebugUtilsMessengerCreateInfoEXT{};
-    //createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT*/ |
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT*/ |
-        vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;//VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo = vk::DebugUtilsMessengerCreateInfoEXT{};
+   
+    createInfo.messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
 
-    createInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral/*VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT*/ |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation/*VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT*/ |
-        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance/*VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT*/;
+    createInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
     createInfo.pfnUserCallback = debugCallback;
 }
@@ -1074,8 +1116,7 @@ bool te::VulkanRenderManager::isDeviceSuitable(vk::PhysicalDevice device)
     }
 
     vk::PhysicalDeviceFeatures supportedFeatures = device.getFeatures();
-    //vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-
+   
     return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
@@ -1083,16 +1124,11 @@ QueueFamilyIndices te::VulkanRenderManager::findQueueFamilies(vk::PhysicalDevice
 {
     QueueFamilyIndices indices;
 
-    /*uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<vk::QueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());*/
 
     std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
-        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics/*VK_QUEUE_GRAPHICS_BIT*/) {
+        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
             indices.graphicsFamily = i;
         }
 
@@ -1117,29 +1153,9 @@ SwapChainSupportDetails te::VulkanRenderManager::querySwapChainSupport(vk::Physi
 {
     SwapChainSupportDetails details;
    
-    //vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
     device.getSurfaceCapabilitiesKHR(surface, &details.capabilities);
 
-    //uint32_t formatCount;
-    /*
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-    }*/
     details.formats = device.getSurfaceFormatsKHR(surface);
-
-    //details.formats = device.getSurfaceFormatsKHR(surface, &formatCount, details.formats.data());
-
-    
-    /*uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-    }*/
 
     details.presentModes = device.getSurfacePresentModesKHR(surface);
 
@@ -1149,8 +1165,8 @@ SwapChainSupportDetails te::VulkanRenderManager::querySwapChainSupport(vk::Physi
 vk::SurfaceFormatKHR te::VulkanRenderManager::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats)
 {
     for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == vk::Format::eB8G8R8A8Srgb/*VK_FORMAT_B8G8R8A8_SRGB*/ &&
-            availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear /*VK_COLOR_SPACE_SRGB_NONLINEAR_KHR*/) {
+        if (availableFormat.format == vk::Format::eB8G8R8A8Srgb &&
+            availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear ) {
             return availableFormat;
         }
     }
@@ -1160,12 +1176,7 @@ vk::SurfaceFormatKHR te::VulkanRenderManager::chooseSwapSurfaceFormat(const std:
 
 bool te::VulkanRenderManager::checkDeviceExtensionSupport(vk::PhysicalDevice device)
 {
-    /*uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-    std::vector<vk::ExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());*/
-
+    
     std::vector<vk::ExtensionProperties> availableExtensions = device.enumerateDeviceExtensionProperties();
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
@@ -1196,7 +1207,6 @@ vk::Extent2D te::VulkanRenderManager::chooseSwapExtent(const vk::SurfaceCapabili
     else {
         int width, height;
         window->getFramebufferSize(&width, &height);
-        //glfwGetFramebufferSize(window, &width, &height);
 
         vk::Extent2D actualExtent = {
             static_cast<uint32_t>(width),
@@ -1210,7 +1220,12 @@ vk::Extent2D te::VulkanRenderManager::chooseSwapExtent(const vk::SurfaceCapabili
     }
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL te::VulkanRenderManager::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL te::VulkanRenderManager::debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData
+)
 {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
@@ -1221,19 +1236,17 @@ vk::Format te::VulkanRenderManager::findDepthFormat()
 {
     return findSupportedFormat(
         { 
-            vk::Format::eD32Sfloat/*VK_FORMAT_D32_SFLOAT*/,
-            vk::Format::eD32SfloatS8Uint/*VK_FORMAT_D32_SFLOAT_S8_UINT*/,
-            vk::Format::eD24UnormS8Uint/*VK_FORMAT_D24_UNORM_S8_UINT*/ 
+            vk::Format::eD32Sfloat,
+            vk::Format::eD32SfloatS8Uint,
+            vk::Format::eD24UnormS8Uint 
         },
-        vk::ImageTiling::eOptimal/*VK_IMAGE_TILING_OPTIMAL*/,
-        vk::FormatFeatureFlagBits::eDepthStencilAttachment/*VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT*/
+        vk::ImageTiling::eOptimal,
+        vk::FormatFeatureFlagBits::eDepthStencilAttachment
     );
 }
 
 uint32_t te::VulkanRenderManager::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 {
-   
-    //vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
     vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
 
@@ -1250,12 +1263,12 @@ vk::Format te::VulkanRenderManager::findSupportedFormat(const std::vector<vk::Fo
 {
     for (vk::Format format : candidates) {
        
-        //vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+       
         vk::FormatProperties props = physicalDevice.getFormatProperties(format);
-        if (tiling ==vk::ImageTiling::eLinear /*VK_IMAGE_TILING_LINEAR*/ && (props.linearTilingFeatures & features) == features) {
+        if (tiling ==vk::ImageTiling::eLinear  && (props.linearTilingFeatures & features) == features) {
             return format;
         }
-        else if (tiling == vk::ImageTiling::eOptimal/*VK_IMAGE_TILING_OPTIMAL*/ && (props.optimalTilingFeatures & features) == features) {
+        else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
             return format;
         }
     }
@@ -1266,8 +1279,8 @@ vk::Format te::VulkanRenderManager::findSupportedFormat(const std::vector<vk::Fo
 void te::VulkanRenderManager::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory)
 {
     vk::ImageCreateInfo imageInfo{};
-    //imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = vk::ImageType::e2D; /*VK_IMAGE_TYPE_2D*/
+    
+    imageInfo.imageType = vk::ImageType::e2D; 
     imageInfo.extent.width = width;
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
@@ -1275,20 +1288,20 @@ void te::VulkanRenderManager::createImage(uint32_t width, uint32_t height, uint3
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
-    imageInfo.initialLayout = vk::ImageLayout::eUndefined; /*VK_IMAGE_LAYOUT_UNDEFINED*/
+    imageInfo.initialLayout = vk::ImageLayout::eUndefined;
     imageInfo.usage = usage;
-    imageInfo.samples = vk::SampleCountFlagBits::e1;/*VK_SAMPLE_COUNT_1_BIT*/
-    imageInfo.sharingMode = vk::SharingMode::eExclusive;/*VK_SHARING_MODE_EXCLUSIVE*/
+    imageInfo.samples = vk::SampleCountFlagBits::e1;
+    imageInfo.sharingMode = vk::SharingMode::eExclusive;
 
     if (device.createImage(&imageInfo, nullptr, &image) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create image!");
     }
 
     vk::MemoryRequirements memRequirements = device.getImageMemoryRequirements(image);
-    //vkGetImageMemoryRequirements(device, image, &memRequirements);
+ 
 
     vk::MemoryAllocateInfo allocInfo{};
-    //allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
@@ -1296,13 +1309,13 @@ void te::VulkanRenderManager::createImage(uint32_t width, uint32_t height, uint3
         throw std::runtime_error("failed to allocate image memory!");
     }
     device.bindImageMemory(image, imageMemory, 0);
-    //vkBindImageMemory(device, image, imageMemory, 0);
+   
 }
 
 vk::ShaderModule te::VulkanRenderManager::createShaderModule(const std::vector<char>& code)
 {
     vk::ShaderModuleCreateInfo createInfo{};
-    //createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+   
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
@@ -1316,11 +1329,6 @@ vk::ShaderModule te::VulkanRenderManager::createShaderModule(const std::vector<c
 
 bool te::VulkanRenderManager::checkValidationLayerSupport()
 {
-   /* uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<vk::LayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());*/
 
     std::vector<vk::LayerProperties> availableLayers = vk::enumerateInstanceLayerProperties();
 
@@ -1352,10 +1360,10 @@ void te::VulkanRenderManager::createVertexBuffer(std::vector<te::Vertex> vertice
         vertices,
         vertexBuffer,
         vertexBufferMemory,
-        _instance->commandPool,
-        _instance->graphicsQueue,
-        _instance->physicalDevice,
-        _instance->device
+        instance->commandPool,
+        instance->graphicsQueue,
+        instance->physicalDevice,
+        instance->device
     );
 }
 
@@ -1365,17 +1373,15 @@ void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, v
         indices,
         indexBuffer,
         indexBufferMemory,
-        _instance->commandPool,
-        _instance->graphicsQueue,
-        _instance->physicalDevice,
-        _instance->device
+        instance->commandPool,
+        instance->graphicsQueue,
+        instance->physicalDevice,
+        instance->device
     );
 }
 
 
 #pragma endregion
-
-
 
 void te::VulkanRenderManager::recreateSwapChain()
 {
@@ -1401,7 +1407,7 @@ void te::VulkanRenderManager::recreateSwapChain()
 void te::VulkanRenderManager::cleanupSwapChain()
 {
     device.destroyImageView(depthImageView, nullptr);
-    //vkDestroyImageView(device, );
+   
     device.destroyImage(depthImage, nullptr);
     device.freeMemory(depthImageMemory, nullptr);
 
@@ -1432,17 +1438,16 @@ void te::VulkanRenderManager::cleanupSwapChain()
 void te::VulkanRenderManager::drawFrame()
 {
     device.waitForFences(1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-    //vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
+    
     uint32_t imageIndex;
    
     vk::Result result = device.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
-    //device.acquireNextImageKHR()
-    if (result == vk::Result::eErrorOutOfDateKHR/*VK_ERROR_OUT_OF_DATE_KHR*/) {
+   
+    if (result == vk::Result::eErrorOutOfDateKHR) {
         recreateSwapChain();
         return;
     }
-    else if (result != vk::Result::eSuccess && result !=  vk::Result::eSuboptimalKHR/*VK_SUBOPTIMAL_KHR*/) {
+    else if (result != vk::Result::eSuccess && result !=  vk::Result::eSuboptimalKHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
@@ -1454,10 +1459,9 @@ void te::VulkanRenderManager::drawFrame()
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     vk::SubmitInfo submitInfo{};
-    //submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
+  
     vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-    vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput/*VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT*/ };
+    vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
@@ -1476,7 +1480,6 @@ void te::VulkanRenderManager::drawFrame()
     }
 
     vk::PresentInfoKHR presentInfo{};
-    //presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
@@ -1489,7 +1492,7 @@ void te::VulkanRenderManager::drawFrame()
 
     result = presentQueue.presentKHR(&presentInfo);
 
-    if (result == vk::Result::eErrorOutOfDateKHR /*VK_ERROR_OUT_OF_DATE_KHR*/ || result == vk::Result::eSuboptimalKHR /*VK_SUBOPTIMAL_KHR*/ || window->windowResized()) {
+    if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR || window->windowResized()) {
         window->windowResizedClear();
         recreateSwapChain();
     }

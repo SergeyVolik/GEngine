@@ -117,17 +117,17 @@ void te::Window::windowResizing()
 
 void te::Window::createSurface(vk::Instance instance, vk::SurfaceKHR* pSurface, vk::AllocationCallbacks* pAllocator)
 {
-    vk::Result result = (vk::Result)glfwCreateWindowSurface(
+   /* vk::Result result = (vk::Result)*/glfwCreateWindowSurface(
         static_cast<VkInstance>(instance),
         window, reinterpret_cast<VkAllocationCallbacks*>(pAllocator),
-        reinterpret_cast<VkSurfaceKHR*>(pAllocator)
+        reinterpret_cast<VkSurfaceKHR*>(pSurface)
     );
     
     //vk::Result result = (vk::Result)glfwCreateWindowSurface(instance, window, pAllocator, pSurface);
-    if (result != vk::Result::eSuccess/*VK_SUCCESS*/) {
-        throw std::runtime_error("failed to create window surface!");
-       
-    }
+    //if (result != vk::Result::eSuccess/*VK_SUCCESS*/) {
+    //    throw std::runtime_error("failed to create window surface!");
+    //   
+    //}
 
    
 }

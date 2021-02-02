@@ -12,15 +12,15 @@ namespace te
 	public:
 		
 		inline static void terminate() { 
-			delete _instance;
+			delete instance;
 		};
 		inline static void initialize()
 		{
-			_instance = new AssetsLoader();
+			instance = new AssetsLoader();
 		}
 		
 		te::Mesh loadModel(const char* path);
-		void loadTextureToGPU(const char* path, VkImage image);
+		void loadTextureToGPU(const char* path, vk::Image image);
 
 	};
 }

@@ -3,105 +3,117 @@
 #include "Vertex.h"
 
 void te::vkh::VulkanHelper::copyBuffer(
-    VkBuffer srcBuffer,
-    VkBuffer dstBuffer,
-    VkDeviceSize size,
-    VkQueue graphicsQueue,
-    VkCommandPool commandPool,
-    VkDevice device
+    vk::Buffer srcBuffer,
+    vk::Buffer dstBuffer,
+    vk::DeviceSize size,
+    vk::Queue graphicsQueue,
+    vk::CommandPool commandPool,
+    vk::Device device
 )
 {
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands(commandPool, device);
+    vk::CommandBuffer commandBuffer = beginSingleTimeCommands(commandPool, device);
 
-    VkBufferCopy copyRegion{};
+    vk::BufferCopy copyRegion{};
     copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
+  
+    commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
+ 
     endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
 }
 
 void te::vkh::VulkanHelper::endSingleTimeCommands(
-    VkCommandBuffer commandBuffer,
-    VkQueue graphicsQueue,
-    VkCommandPool commandPool,
-    VkDevice device
+    vk::CommandBuffer commandBuffer,
+    vk::Queue graphicsQueue,
+    vk::CommandPool commandPool,
+    vk::Device device
 )
 {
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    commandBuffer.end();
+   
+    vk::SubmitInfo submitInfo{};
+    
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
-
-    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    graphicsQueue.submit(1, &submitInfo, nullptr);
+  
+    graphicsQueue.waitIdle();  
+   
+    device.freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
-VkCommandBuffer te::vkh::VulkanHelper::beginSingleTimeCommands(VkCommandPool commandPool, VkDevice device)
+vk::CommandBuffer te::vkh::VulkanHelper::beginSingleTimeCommands(vk::CommandPool commandPool, vk::Device device)
 {
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    vk::CommandBufferAllocateInfo allocInfo{};
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;
     allocInfo.commandPool = commandPool;
     allocInfo.commandBufferCount = 1;
 
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    vk::CommandBuffer commandBuffer;
+    
+    device.allocateCommandBuffers(&allocInfo, &commandBuffer);
 
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vk::CommandBufferBeginInfo beginInfo{};
+    beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    commandBuffer.begin(&beginInfo);
 
     return commandBuffer;
 }
 
-std::vector<VkPhysicalDevice> te::vkh::VulkanHelper::getPhysicalDevices(VkInstance instance)
+std::vector<vk::PhysicalDevice> te::vkh::VulkanHelper::getPhysicalDevices(vk::Instance instance)
 {
-    uint32_t deviceCount = 0;
 
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
 
-    if (deviceCount == 0) {
+    if (devices.size() == 0) {
         throw std::runtime_error("failed to find GPUs with Vulkan support!");
     }
-
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
     return devices;
 }
 
 void te::vkh::VulkanHelper::createVertexBuffer(
     std::vector<te::Vertex> vertices,
-    VkBuffer& vertexBuffer,
-    VkDeviceMemory& vertexBufferMemory,
-    VkCommandPool commandPool,
-    VkQueue graphicsQueue,
-    VkPhysicalDevice phisycalDevice,
-    VkDevice device
+    vk::Buffer& vertexBuffer,
+    vk::DeviceMemory& vertexBufferMemory,
+    vk::CommandPool commandPool,
+    vk::Queue graphicsQueue,
+    vk::PhysicalDevice phisycalDevice,
+    vk::Device device
 )
 {
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
+    vk::Buffer stagingBuffer;
+    vk::DeviceMemory stagingBufferMemory;
 
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory, phisycalDevice, device);
+    createBuffer(
+        bufferSize,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostVisible |
+        vk::MemoryPropertyFlagBits::eHostCoherent,
+        stagingBuffer, stagingBufferMemory,
+        phisycalDevice, device
+    );
 
     void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+   
+    device.mapMemory(stagingBufferMemory, 0, bufferSize, {}, &data);
+   
     memcpy(data, vertices.data(), (size_t)bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
 
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory, phisycalDevice, device);
+    device.unmapMemory(stagingBufferMemory);
+
+
+    createBuffer(
+        bufferSize,
+        vk::BufferUsageFlagBits::eTransferDst |
+        vk::BufferUsageFlagBits::eVertexBuffer,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        vertexBuffer, vertexBufferMemory, phisycalDevice, device);
 
     te::vkh::VulkanHelper::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, graphicsQueue, commandPool, device);
-    //copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -109,29 +121,42 @@ void te::vkh::VulkanHelper::createVertexBuffer(
 
 void te::vkh::VulkanHelper::createIndexBuffer(
     std::vector<uint32_t> indices,
-    VkBuffer& indexBuffer, 
-    VkDeviceMemory& indexBufferMemory,
-    VkCommandPool commandPool,
-    VkQueue graphicsQueue,
-    VkPhysicalDevice phisycalDevice,
-    VkDevice device
+    vk::Buffer& indexBuffer, 
+    vk::DeviceMemory& indexBufferMemory,
+    vk::CommandPool commandPool,
+    vk::Queue graphicsQueue,
+    vk::PhysicalDevice phisycalDevice,
+    vk::Device device
 )
 {
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+    vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory, phisycalDevice, device);
+    vk::Buffer stagingBuffer;
+    vk::DeviceMemory stagingBufferMemory;
+    createBuffer(
+        bufferSize,
+        vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostVisible |
+        vk::MemoryPropertyFlagBits::eHostCoherent,
+        stagingBuffer, stagingBufferMemory,
+        phisycalDevice, device
+    );
 
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, indices.data(), (size_t)bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
 
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory, phisycalDevice, device);
+    createBuffer(
+        bufferSize,
+        vk::BufferUsageFlagBits::eTransferDst |
+        vk::BufferUsageFlagBits::eIndexBuffer,
+        vk::MemoryPropertyFlagBits::eDeviceLocal,
+        indexBuffer, indexBufferMemory,
+        phisycalDevice, device
+    );
 
     te::vkh::VulkanHelper::copyBuffer(stagingBuffer, indexBuffer, bufferSize, graphicsQueue, commandPool, device);
-    //copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -141,43 +166,43 @@ void te::vkh::VulkanHelper::createIndexBuffer(
 
 
 void te::vkh::VulkanHelper::createBuffer(
-    VkDeviceSize size,
-    VkBufferUsageFlags usage,
-    VkMemoryPropertyFlags properties,
-    VkBuffer& buffer,
-    VkDeviceMemory& bufferMemory,
-    VkPhysicalDevice phisycalDevice,
-    VkDevice device)
+    vk::DeviceSize size,
+    vk::BufferUsageFlags usage,
+    vk::MemoryPropertyFlags properties,
+    vk::Buffer& buffer,
+    vk::DeviceMemory& bufferMemory,
+    vk::PhysicalDevice phisycalDevice,
+    vk::Device device)
 {
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    vk::BufferCreateInfo bufferInfo{};
+    
     bufferInfo.size = size;
     bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
-    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+    if (device.createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create buffer!");
     }
 
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+    vk::MemoryRequirements memRequirements;
+    device.getBufferMemoryRequirements(buffer, &memRequirements);
 
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    vk::MemoryAllocateInfo allocInfo{};
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = te::vkh::VulkanHelper::findMemoryType(memRequirements.memoryTypeBits, properties, phisycalDevice);
 
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+    if (device.allocateMemory(&allocInfo, nullptr, &bufferMemory) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to allocate buffer memory!");
     }
 
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
- uint32_t te::vkh::VulkanHelper::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties, VkPhysicalDevice physicalDevice)
+ uint32_t te::vkh::VulkanHelper::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties, vk::PhysicalDevice physicalDevice)
 {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    vk::PhysicalDeviceMemoryProperties memProperties;
+
+    physicalDevice.getMemoryProperties(&memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -188,26 +213,26 @@ void te::vkh::VulkanHelper::createBuffer(
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
- void te::vkh::VulkanHelper::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkCommandPool commandPool, VkQueue graphicsQueue, VkDevice device)
+ void te::vkh::VulkanHelper::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, vk::CommandPool commandPool, vk::Queue graphicsQueue, vk::Device device)
  {
-     VkCommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool, device);
+     vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool, device);
 
-     VkBufferImageCopy region{};
+     vk::BufferImageCopy region{};
      region.bufferOffset = 0;
      region.bufferRowLength = 0;
      region.bufferImageHeight = 0;
-     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+     region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
      region.imageSubresource.mipLevel = 0;
      region.imageSubresource.baseArrayLayer = 0;
      region.imageSubresource.layerCount = 1;
-     region.imageOffset = { 0, 0, 0 };
-     region.imageExtent = {
+     region.imageOffset = vk::Offset3D{ 0, 0, 0 };
+     region.imageExtent = vk::Extent3D{
          width,
          height,
          1
      };
-
-     vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    
+     commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, 1, &region);
 
      te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
  }

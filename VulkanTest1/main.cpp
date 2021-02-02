@@ -1,7 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYOBJLOADER_IMPLEMENTATION
 
-
+#include <vulkan/vulkan.hpp>
 
 #include "VulkanRenderManager.h"
 #include "WindowManager.h"
@@ -10,7 +10,7 @@
 #include "SceneManager.h"
 #include "Time.h"
 #include "AssetsLoader.h"
-#include "Scene.h"
+
 #include "Entity.h";
 #include "Camera.h"
 #include "Renderer.h"
@@ -18,8 +18,8 @@
 #include "SimplerModelTransformations.h"
 
 
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
+//#define VMA_IMPLEMENTATION
+//#include "vk_mem_alloc.h"
 
 class GEngine {
 
@@ -38,16 +38,17 @@ private:
 
     void initSystems() {
 
-
+        
         te::WindowManager::initialize();
         window = new te::Window(WIDTH, HEIGHT, "Vulkan");
         te::InputManager::initialize(window->getWindow());
-        te::AssetsLoader::initialize();
+        //te::AssetsLoader::initialize();
+
 
         te::VulkanRenderManager::initialize(window);
        
-        te::SceneManager::initialize();
-        te::Scene* currentScene = te::SceneManager::getInstance()->createScene("demo");
+        //te::SceneManager::initialize();
+        //te::Scene* currentScene = te::SceneManager::getInstance()->createScene("demo");
 
        /* te::Entity* cameraHolder = new te::Entity();
         te::Camera* camComp = new te::Camera();
@@ -114,7 +115,7 @@ private:
         window->terminateWindow();
         te::WindowManager::getInstance()->terminate();
 
-        te::AssetsLoader::terminate();
+        //te::AssetsLoader::terminate();
 
 
     }
@@ -125,7 +126,7 @@ private:
 
 int main() {
 
-
+    //VULKAN_HPP_DEFAULT_DISPATCHER.init(instance->vulkanInstance, vkGetInstanceProcAddr);
     GEngine app;
 
     try {

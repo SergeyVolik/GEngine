@@ -17,7 +17,7 @@ te::Scene* te::SceneManager::createScene(const char* name) {
 
 void te::SceneManager::changeScene(int index) {
     int curIdx = 0;
-    for (const auto& scene : _instance->_scenes)
+    for (const auto& scene : instance->_scenes)
     {
         if (curIdx == index)
         {
@@ -33,17 +33,17 @@ void te::SceneManager::changeScene(int index) {
 void te::SceneManager::terminate() {
     if (te::SceneManager::isInitialized())
     {
-        for (auto& scene : _instance->_scenes)
+        for (auto& scene : instance->_scenes)
             delete scene;
 
-        delete _instance;
+        delete instance;
     }
 }
 void  te::SceneManager::initialize() {
     if (!te::SceneManager::isInitialized())
     {
 
-        _instance = new te::SceneManager();
+        instance = new te::SceneManager();
 
     }
 }

@@ -1,11 +1,19 @@
 #ifndef VULKAN_RENDERER_MANAGER
 #define VULKAN_RENDERER_MANAGER
-#include <GLFW/glfw3.h>
-#include <vulkan/vulkan.hpp>
+//#include <GLFW/glfw3.h
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+//#define VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
+//#define VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
@@ -92,13 +100,13 @@ namespace te
        
         te::Window* window;
 
-        vk::Instance instance;
+        vk::Instance vulkanInstance;
         vk::DebugUtilsMessengerEXT debugMessenger;
 
-        //VkSurfaceKHR surface;
+      
         vk::SurfaceKHR surface;
 
-        //VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+     
         vk::PhysicalDevice physicalDevice;
         Entity* gObject;
         Transform* gTransform;
@@ -150,9 +158,8 @@ namespace te
         std::vector<vk::Fence> imagesInFlight;
 
         
-        size_t currentFrame = 0;
+        size_t currentFrame = 0;     
 
-       
         void createInstance();
         void setupDebugMessenger();
         void createSurface();
@@ -220,95 +227,11 @@ namespace te
         void recreateSwapChain();
         void cleanupSwapChain();
         void drawFrame();
-        static void initialize(te::Window* wnd) {
+        static void initialize(te::Window* wnd);
 
-
-            _instance = new VulkanRenderManager();
-            _instance->window = wnd;
-
-            _instance->createInstance();
-            _instance->setupDebugMessenger();
-            _instance->createSurface();
-            _instance->pickPhysicalDevice();
-            _instance->createLogicalDevice();
-
-            _instance->createVulkanMemoryAllocator();
-            _instance->createSwapChain();
-            _instance->createSwapChainImageViews();
-            _instance->createRenderPass();
-            _instance->createDescriptorSetLayout();
-            _instance->createGraphicsPipeline();
-            _instance->createCommandPool();
-            _instance->createDepthResources();
-            _instance->createFramebuffers();
-            _instance->createTextureImage(_instance->textureImage, _instance->mipLevels);
-            _instance->createTextureImageView(_instance->textureImageView,_instance->textureImage, _instance->mipLevels);
-            _instance->createTextureSampler();
-            _instance->loadModel();
-            _instance->gObject = new Entity();
-            _instance->gTransform = (Transform*)_instance->gObject->getComponent(typeid(Transform).hash_code());
-            _instance->gTransform->onAwake();
-
-            _instance->createVertexBuffer(
-                _instance->vertices,
-                _instance->vertexBuffer,
-                _instance->vertexBufferMemory
-            
-            );
+        static void terminate();
         
-            _instance->createIndexBuffer(
-                _instance->_indices,
-                _instance->_indexBuffer,
-                _instance->_indexBufferMemory
-            );
-
-            _instance->createUniformBuffers();
-            _instance->createDescriptorPool();
-            _instance->createDescriptorSets();
-            _instance->createCommandBuffers();
-            _instance->createSyncObjects();
-
-        };
-
-        static void terminate()
-        {
-            _instance->cleanupSwapChain();
-
-
-            // удаление даных о текстуре в  GPU
-            _instance->device.destroySampler(_instance->textureSampler, nullptr);
-            _instance->device.destroyImageView(_instance->textureImageView, nullptr);
-            _instance->device.destroyImage(_instance->textureImage, nullptr);
-            _instance->device.freeMemory(_instance->textureImageMemory, nullptr);
-
-
-            _instance->device.destroyDescriptorSetLayout(_instance->descriptorSetLayout, nullptr);
-
-            _instance->device.destroyBuffer(_instance->_indexBuffer, nullptr);
-            _instance->device.freeMemory(_instance->_indexBufferMemory, nullptr);
-
-            _instance->device.destroyBuffer(_instance->vertexBuffer, nullptr);
-            _instance->device.freeMemory(_instance->vertexBufferMemory, nullptr);
-
-            for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-                _instance->device.destroySemaphore(_instance->renderFinishedSemaphores[i], nullptr);
-                _instance->device.destroySemaphore(_instance->imageAvailableSemaphores[i], nullptr);
-                _instance->device.destroyFence(_instance->inFlightFences[i], nullptr);
-            }
-
-            _instance->device.destroyCommandPool(_instance->commandPool, nullptr);
-
-            _instance->device.destroy();
-
-            if (enableValidationLayers) {
-                _instance->instance.destroyDebugUtilsMessengerEXT(_instance->debugMessenger, nullptr);
-            }
-
-            
-            _instance->instance.destroySurfaceKHR(_instance->surface, nullptr);          
-            _instance->instance.destroy();
-
-        }
+           
     };
 
 }
