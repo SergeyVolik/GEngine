@@ -1,5 +1,9 @@
+
+//----------static libary defines-------
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYOBJLOADER_IMPLEMENTATION
+#define VMA_IMPLEMENTATION
+//------------------------------------
 
 #include <vulkan/vulkan.hpp>
 
@@ -101,7 +105,7 @@ private:
         }
 
         // ожидание конца отрисовки об'ектов
-        te::VulkanRenderManager::getInstance()->device.waitIdle();
+        te::VulkanRenderManager::getInstance()->deviceWaitIdle();
         //vkDeviceWaitIdle();
     }
 

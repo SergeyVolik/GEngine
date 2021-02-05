@@ -49,9 +49,6 @@
     <Filter Include="Исходные файлы\Utils">
       <UniqueIdentifier>{8e650fa0-b340-419b-ae98-2f99270e44d2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы заголовков\VulkanWrap">
-      <UniqueIdentifier>{391a88b3-f6c7-400f-af3a-4c5001098331}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы заголовков\Systems\Resources">
       <UniqueIdentifier>{90752a7d-11ae-4b53-9270-f512fc57bca0}</UniqueIdentifier>
     </Filter>
@@ -151,9 +148,6 @@
     </ClInclude>
     <ClInclude Include="VulkanHelper.h">
       <Filter>Файлы заголовков\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Vulkan.h">
-      <Filter>Файлы заголовков\VulkanWrap</Filter>
     </ClInclude>
     <ClInclude Include="AssetsLoader.h">
       <Filter>Файлы заголовков\Systems\Resources</Filter>

@@ -393,14 +393,19 @@ void te::VulkanRenderManager::createDescriptorSetLayout()
 
 void te::VulkanRenderManager::createGraphicsPipeline()
 {
+    //---------------- считывание байткода шейдеров с файлов----------------
     auto vertShaderCode = te::FileReader::readFile("shaders/vert.spv");
     auto fragShaderCode = te::FileReader::readFile("shaders/frag.spv");
 
+    //создание шейдерных модулей вулкана
     vk::ShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     vk::ShaderModule fragShaderModule = createShaderModule(fragShaderCode);
 
+    
+    //создание структур для уровня шейдеров в графичксом пайплайне
     vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
    
+
     vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
     vertShaderStageInfo.module = vertShaderModule;
     vertShaderStageInfo.pName = "main";
@@ -413,6 +418,8 @@ void te::VulkanRenderManager::createGraphicsPipeline()
 
     vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
+
+    //--------------определение структуры для ввода вертексов в шейдер-----------------------
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 
     auto bindingDescription = te::Vertex::getBindingDescription();
@@ -423,11 +430,14 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
+    
+    //------------------создание структуры котороя определяет в какой последовательности и какие финуры будут читаться из вертексов-------------
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
-  
+    
     inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
+    //--------------------------------настройка вывода изображения на полотно------------------------
     vk::Viewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -440,6 +450,7 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     scissor.offset = vk::Offset2D{ 0, 0 };
     scissor.extent = swapChainExtent;
 
+
     vk::PipelineViewportStateCreateInfo viewportState{};
   
     viewportState.viewportCount = 1;
@@ -447,6 +458,8 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     viewportState.scissorCount = 1;
     viewportState.pScissors = &scissor;
 
+
+    //-----------------------------настройка уровня растеризации-------------------------
     vk::PipelineRasterizationStateCreateInfo rasterizer{};
 
     rasterizer.depthClampEnable = VK_FALSE;
@@ -457,11 +470,15 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
     rasterizer.depthBiasEnable = VK_FALSE;
 
+
+    //------------------------------настройка мультисемплинга(сглаживания)--------------------------------
     vk::PipelineMultisampleStateCreateInfo multisampling{};
    
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
 
+
+    //------------------------------настройка глубины и трафарета------------------------------
     vk::PipelineDepthStencilStateCreateInfo depthStencil{};
   
     depthStencil.depthTestEnable = VK_TRUE;
@@ -470,6 +487,7 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
+    //------------------------------смешивание цветов-------------------------------------------
     vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
                                             vk::ColorComponentFlagBits::eG |
@@ -488,6 +506,8 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     colorBlending.blendConstants[1] = 0.0f;
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
+
+
 
     vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
    
@@ -518,8 +538,9 @@ void te::VulkanRenderManager::createGraphicsPipeline()
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    
+    device.destroyShaderModule(fragShaderModule, nullptr);
+    device.destroyShaderModule(vertShaderModule, nullptr);
 }
 
 void te::VulkanRenderManager::createCommandPool()
@@ -1027,7 +1048,7 @@ void te::VulkanRenderManager::createSyncObjects()
     imagesInFlight.resize(swapChainImages.size(), nullptr);
 
     vk::SemaphoreCreateInfo semaphoreInfo{};
-
+   
     vk::FenceCreateInfo fenceInfo{};
   
     fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
@@ -1447,6 +1468,7 @@ void te::VulkanRenderManager::drawFrame()
         recreateSwapChain();
         return;
     }
+
     else if (result != vk::Result::eSuccess && result !=  vk::Result::eSuboptimalKHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
@@ -1456,6 +1478,7 @@ void te::VulkanRenderManager::drawFrame()
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
         device.waitForFences(1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
+
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     vk::SubmitInfo submitInfo{};

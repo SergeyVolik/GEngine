@@ -97,29 +97,60 @@ namespace te
     {
     private:
 
-       
+        //окно на котором будет происходить рендеринг
         te::Window* window;
 
+        //декриптор инстанса библиотеки вулкан
         vk::Instance vulkanInstance;
-        vk::DebugUtilsMessengerEXT debugMessenger;
 
-      
+        //физическое устройства GPU (видео карта)
+        vk::PhysicalDevice physicalDevice;
+
+        //логическое устройство созданое на основе физического устройства 
+        // необходино для взаимодествия с драйвером физического устройства
+        vk::Device device;
+
+        //дескриптор дебаг мессенджера библиотеки вулкан
+        vk::DebugUtilsMessengerEXT debugMessenger;
+     
+ 
+
+        //-------------------------------------двойная-тройная буферизация---------------------------------------------
+        //поверхность для выводна на екран
         vk::SurfaceKHR surface;
 
-     
-        vk::PhysicalDevice physicalDevice;
-        Entity* gObject;
-        Transform* gTransform;
-        vk::Queue graphicsQueue;
-        vk::Queue presentQueue;
-
+        // дескриптов для дувойной-тройной буферизации
         vk::SwapchainKHR swapChain;
+
+        //список изображений для каждого кадра последовательности буферзации изображений SwapchainKHR
         std::vector<vk::Image> swapChainImages;
-        vk::Format swapChainImageFormat;
-        vk::Extent2D swapChainExtent;
+
+        //вью изображения для прямого обрашению к изображению
         std::vector<vk::ImageView> swapChainImageViews;
+
+        //буфер изображения двойной-тройной буферизации
         std::vector<vk::Framebuffer> swapChainFramebuffers;
 
+        //цветовой формат отображенного изображения
+        vk::Format swapChainImageFormat;
+
+        //разрежение екрана отображения
+        vk::Extent2D swapChainExtent;
+
+        //-------------------------------------------- синхронизация двойной буферизации------------------------------
+
+        //семафора для синхронизации (ожидания пока изображение не доступно)
+        std::vector<vk::Semaphore> imageAvailableSemaphores;
+        //семафора для синхронизации (ожидания пока операции рендеринга не окончены)
+        std::vector<vk::Semaphore> renderFinishedSemaphores;
+
+        
+        std::vector<vk::Fence> inFlightFences;
+        std::vector<vk::Fence> imagesInFlight;
+
+        //-----------------------------------------------------графика----------------------------------------------
+       
+       
         vk::RenderPass renderPass;
         vk::DescriptorSetLayout descriptorSetLayout;
         vk::PipelineLayout pipelineLayout;
@@ -127,6 +158,11 @@ namespace te
 
         vk::CommandPool commandPool;
 
+        //очередь команд для вычисления елементов графики
+        vk::Queue graphicsQueue;
+
+        //презентационная очередь для отображения на поверхность  SurfaceKHR
+        vk::Queue presentQueue;
         vk::Image depthImage;
         vk::DeviceMemory depthImageMemory;
         vk::ImageView depthImageView;
@@ -148,39 +184,73 @@ namespace te
         std::vector<vk::DeviceMemory> uniformBuffersMemory;
 
         vk::DescriptorPool descriptorPool;
+
         std::vector<vk::DescriptorSet> descriptorSets;
 
         std::vector<vk::CommandBuffer> commandBuffers;
 
-        std::vector<vk::Semaphore> imageAvailableSemaphores;
-        std::vector<vk::Semaphore> renderFinishedSemaphores;
-        std::vector<vk::Fence> inFlightFences;
-        std::vector<vk::Fence> imagesInFlight;
 
-        
+       
+
+        //текущий номер фрейма в spawChain (двойная-тройная буферизация)
         size_t currentFrame = 0;     
 
+
+        //std::list<Renderer*> renderers;
+        Entity* gObject;
+        Transform* gTransform;
+
+
+
+
+
+
+        //инициализация библиотеки вулка
         void createInstance();
+        //установка дебагера для вулкана
         void setupDebugMessenger();
+        //создание полотна на котором будет производиться рендеринга
         void createSurface();
+
+        //выбор физитеского устройства GPU
         void pickPhysicalDevice();
+
+        //создание логического устройсива вулка для взаимодействия с драйвером устройства
         void createLogicalDevice();
+
+        //создание елемента SwapChain для двойной-тройной буферизации
         void createSwapChain();
+
+        //создание отображения SwapChain  в Image views
         void createSwapChainImageViews();
+
+        //настройка структуры для прохода рендеринга (настройка цвета, глубины изображения)
         void createRenderPass();
+
+        //создание привязки данных к шейдерам (vertex, fragment)
         void createDescriptorSetLayout();
+
+        //определение всех этапов отрисовки изображения
         void createGraphicsPipeline();
+
+
         void createCommandPool();
         void createDepthResources();
         void createFramebuffers();
         void createTextureImage(vk::Image&, uint32_t&);
         void createTextureImageView(vk::ImageView& imgView, const vk::Image textureImage, const uint32_t mipLevels);
         void createTextureSampler();
+
+        ///загрузку модели нужно вынести в загрузку ресурсов
         void loadModel();
        
+
+        //
         void createVulkanMemoryAllocator();
 
         void createUniformBuffers();
+
+        //создание пула дескрипторов для пайплана
         void createDescriptorPool();
         void createDescriptorSets();
         void createCommandBuffers();
@@ -218,13 +288,21 @@ namespace te
         vk::ShaderModule createShaderModule(const std::vector<char>& code);
         bool checkValidationLayerSupport();
 
-        
-    public:
-        std::list<Renderer*> renderers;
-        vk::Device device;
-        void createVertexBuffer(std::vector<te::Vertex> indices, vk::Buffer& vertexBuffer, vk::DeviceMemory& vertexBufferMemory);
-        void createIndexBuffer(std::vector<uint32_t>, vk::Buffer&, vk::DeviceMemory&);
+        //перестройка ципочки обновлений (двойная-тройная буферизация) после изменения размеров окна
         void recreateSwapChain();
+
+    public:
+
+
+        //выделение вертесного буфера и получение дискриптора паняти
+        void createVertexBuffer(std::vector<te::Vertex> indices, vk::Buffer& vertexBuffer, vk::DeviceMemory& vertexBufferMemory);
+
+        //выделение индесного буфера и получение дискриптора паняти
+        void createIndexBuffer(std::vector<uint32_t>, vk::Buffer&, vk::DeviceMemory&);
+        
+        void deviceWaitIdle() { device.waitIdle(); }
+
+      
         void cleanupSwapChain();
         void drawFrame();
         static void initialize(te::Window* wnd);
