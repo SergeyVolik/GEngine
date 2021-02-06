@@ -2,6 +2,23 @@
 
 
 
+te::Window::Window(GLFWwindow* wnd)
+{
+    if (!WindowManager::isInitialized())
+    {
+        throw std::runtime_error("glfw api not initialized. please use Window::initializeSystem() for init and Window::terminateSystem() for terminate api");
+    }
+
+    window = wnd;
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    this->framebufferHeight = width;
+    this->framebufferWidth = height;
+}
+
 te::Window::Window(uint32_t width, uint32_t height, const char* title)
 {
     if (!WindowManager::isInitialized())

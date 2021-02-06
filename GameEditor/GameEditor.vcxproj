@@ -164,6 +164,11 @@
     <ClInclude Include="imstb_textedit.h" />
     <ClInclude Include="imstb_truetype.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GameEngineCore\VulkanTest1.vcxproj">
+      <Project>{8043561b-c43f-4e38-b955-8e1caf093b3e}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -21,20 +21,27 @@
 
 #include "SimplerModelTransformations.h"
 #include "GameEngine.h"
-
+#include "Window.h"
 //#define VMA_IMPLEMENTATION
 //#include "vk_mem_alloc.h"
 
 //const std::string MODEL_PATH = "models/viking_room.obj";
 
-
+void te::GEngine::setWindow(GLFWWindow* wnd)
+{ 
+    window = new te::Window(wnd); 
+}
 void te::GEngine::initSystems() {
 
         
-        te::WindowManager::initialize();
-        window = new te::Window(WIDTH, HEIGHT, "Vulkan");
-        te::InputManager::initialize(window->getWindow());
-        te::AssetsLoader::initialize();
+#ifndef TIME_ENGINE_EDITOR
+    te::WindowManager::initialize();
+    window = new te::Window(WIDTH, HEIGHT, "Vulkan");
+#endif // !TIME_ENGINE_EDITOR
+
+       
+        //te::InputManager::initialize(window->getWindow());
+        //te::AssetsLoader::initialize();
 
 
         te::VulkanRenderManager::initialize(window);
@@ -72,26 +79,13 @@ void te::GEngine::mainLoop() {
     //te::SceneManager::getInstance()->getCurrentScene()->awakeAllEntities();
     //te::SceneManager::getInstance()->getCurrentScene()->startAllEntities();
 
+
+
     while (!window->windowShouldClose()) {
 
+        drawFrame();
 
-
-        te::Time::calcDelta();
-        std::string fpsData = std::to_string(static_cast<int>(te::Time::getDelta() * 1000)) 
-            + " ms | " + std::to_string(static_cast<int>(1.0f / te::Time::getDelta())) + " fps";
-        window->setTitle(fpsData.c_str());
-           
-        te::InputManager::pollEvents();
-
-            
-        te::VulkanRenderManager::getInstance()->drawFrame();
-        // te::SceneManager::getInstance()->getCurrentScene()->updateAllEntities();
-           
-        if (te::InputManager::getKey(te::KeyCode::KEY_LEFT_ALT) && te::InputManager::getKeyDown(te::KeyCode::KEY_ENTER))
-        {
-            window->setFullScreen(!window->isFullScreen());
-        }
-
+     
     }
 
     // ожидание конца отрисовки об'ектов
@@ -112,6 +106,25 @@ void te::GEngine::cleanup() {
     te::AssetsLoader::terminate();
 
 
+}
+
+void te::GEngine::drawFrame()
+{
+    te::Time::calcDelta();
+    std::string fpsData = std::to_string(static_cast<int>(te::Time::getDelta() * 1000))
+        + " ms | " + std::to_string(static_cast<int>(1.0f / te::Time::getDelta())) + " fps";
+    window->setTitle(fpsData.c_str());
+
+    te::InputManager::pollEvents();
+
+
+    te::VulkanRenderManager::getInstance()->drawFrame();
+    // te::SceneManager::getInstance()->getCurrentScene()->updateAllEntities();
+
+    if (te::InputManager::getKey(te::KeyCode::KEY_LEFT_ALT) && te::InputManager::getKeyDown(te::KeyCode::KEY_ENTER))
+    {
+        window->setFullScreen(!window->isFullScreen());
+    }
 }
 
 

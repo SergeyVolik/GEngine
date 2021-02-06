@@ -19,16 +19,23 @@ namespace te
         static void terminate() {
             if (WindowManager::isInitialized())
             {
-                glfwTerminate();
+#ifndef TIME_ENGINE_EDITOR
+                    glfwTerminate();
+    #endif // TIME_ENGINE_EDITOR
+
+              
                 delete instance;
             }
         };
         static void initialize() {
             if (!WindowManager::isInitialized())
             {
+#ifndef TIME_ENGINE_EDITOR
                 glfwInit();
-                instance = new WindowManager();
                 glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#endif // TIME_ENGINE_EDITOR
+                instance = new WindowManager();
+                
             }
         };
 
