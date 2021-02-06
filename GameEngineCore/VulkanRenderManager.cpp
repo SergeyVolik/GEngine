@@ -138,7 +138,7 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
     instance->setupDebugMessenger();
     instance->createSurface();
     instance->pickPhysicalDevice();
-    instance->createLogicalDevice();
+    instance->createLogicalDevice();    
 
     instance->createVulkanMemoryAllocator();
     instance->createSwapChain();
@@ -149,9 +149,14 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
     instance->createCommandPool();
     instance->createDepthResources();
     instance->createFramebuffers();
+
+
+    //texture
     instance->createTextureImage(instance->textureImage, instance->mipLevels);
     instance->createTextureImageView(instance->textureImageView, instance->textureImage, instance->mipLevels);
     instance->createTextureSampler();
+
+    //model
     instance->loadModel();
     instance->gObject = new Entity();
     instance->gTransform = (Transform*)instance->gObject->getComponent(typeid(Transform).hash_code());
@@ -990,7 +995,7 @@ void te::VulkanRenderManager::createCommandBuffers()
 
     vk::CommandBufferAllocateInfo allocInfo{};
     allocInfo.commandPool = commandPool;
-    allocInfo.level = vk::CommandBufferLevel::ePrimary;;
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;
     allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
     if (device.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess) {
@@ -1017,6 +1022,8 @@ void te::VulkanRenderManager::createCommandBuffers()
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
+        
+
         commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
 
         commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
@@ -1032,8 +1039,8 @@ void te::VulkanRenderManager::createCommandBuffers()
 
         commandBuffers[i].drawIndexed(static_cast<uint32_t>(_indices.size()), 1, 0, 0, 0);
 
-        vkCmdEndRenderPass(commandBuffers[i]);
 
+        commandBuffers[i].endRenderPass();
         
         commandBuffers[i].end();
 
