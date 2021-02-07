@@ -124,7 +124,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;C:\Users\user\Documents\Visual Studio 2019\Libraries\stb-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\tinyobjloader-master;D:\Study\GEngine\vma;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;C:\Users\user\Documents\Visual Studio 2019\Libraries\stb-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\tinyobjloader-master;D:\Study\GEngine\vma;D:\Study\GEngine\external\ktx\include;D:\Study\GEngine\external\ktx\other_include;C:\Users\user\Desktop\vulkan-examples-cpp\Vulkan\external\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -142,7 +142,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;C:\Users\user\Documents\Visual Studio 2019\Libraries\stb-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\tinyobjloader-master;D:\Study\GEngine\vma;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;C:\Users\user\Documents\Visual Studio 2019\Libraries\stb-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\tinyobjloader-master;D:\Study\GEngine\vma;D:\Study\GEngine\external\ktx\include;D:\Study\GEngine\external\ktx\other_include;C:\Users\user\Desktop\vulkan-examples-cpp\Vulkan\external\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -171,6 +171,7 @@
     <ClCompile Include="Scene.h" />
     <ClCompile Include="SceneManager.h" />
     <ClCompile Include="Time.cpp" />
+    <ClCompile Include="UIOverlay.cpp" />
     <ClCompile Include="VulkanHelper.cpp" />
     <ClCompile Include="VulkanRenderManager.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -193,9 +194,11 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Transform.h" />
+    <ClInclude Include="UIOverlay.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VulkanHelper.h" />
     <ClInclude Include="VulkanRenderManager.h" />
+    <ClInclude Include="VulkanTools.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WindowManager.h" />
   </ItemGroup>

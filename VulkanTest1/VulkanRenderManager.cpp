@@ -73,6 +73,10 @@ void te::VulkanRenderManager::pickPhysicalDevice()
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
+    physicalDevice.getProperties(&deviceProperties);
+    physicalDevice.getFeatures(&deviceFeatures);
+    physicalDevice.getMemoryProperties(&deviceMemoryProperties);
+
 }
 
 void te::VulkanRenderManager::createLogicalDevice()
@@ -145,6 +149,7 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
     instance->createSwapChainImageViews();
     instance->createRenderPass();
     instance->createDescriptorSetLayout();
+    instance->createPipelineCache();
     instance->createGraphicsPipeline();
     instance->createCommandPool();
     instance->createDepthResources();
@@ -202,6 +207,7 @@ void te::VulkanRenderManager::terminate()
         instance->device.destroyFence(instance->inFlightFences[i], nullptr);
     }
 
+    instance->device.destroyPipelineCache(instance->pipelineCache, nullptr);
     instance->device.destroyCommandPool(instance->commandPool, nullptr);
 
     instance->device.destroy();
@@ -398,17 +404,17 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     auto fragShaderCode = te::FileReader::readFile("shaders/frag.spv");
 
     //создание шейдерных модулей вулкана
-    vk::ShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    vk::ShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+    vk::ShaderModule vertShaderModule = te::vkh::VulkanHelper::createShaderModule(device, vertShaderCode);
+    vk::ShaderModule fragShaderModule = te::vkh::VulkanHelper::createShaderModule(device, fragShaderCode);
 
     
     //создание структур дл€ уровн€ шейдеров в графичксом пайплайне
     vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
    
-
     vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
     vertShaderStageInfo.module = vertShaderModule;
     vertShaderStageInfo.pName = "main";
+ 
 
     vk::PipelineShaderStageCreateInfo fragShaderStageInfo{};
     
@@ -534,7 +540,7 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = nullptr;
 
-    if (device.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess) {
+    if (device.createGraphicsPipelines(pipelineCache, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
@@ -550,7 +556,7 @@ void te::VulkanRenderManager::createCommandPool()
     vk::CommandPoolCreateInfo poolInfo{};
    
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
+    poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer; // дл€ сброса всех команд просле прохода рендеринга
     if (device.createCommandPool(&poolInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics command pool!");
     }
@@ -681,7 +687,7 @@ void te::VulkanRenderManager::createTextureImageView(vk::ImageView& imgView, con
 
 void te::VulkanRenderManager::createTextureSampler()
 {
-    vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
+    vk::PhysicalDeviceProperties properties = deviceProperties;
 
 
     vk::SamplerCreateInfo samplerInfo{};
@@ -990,7 +996,7 @@ void te::VulkanRenderManager::createCommandBuffers()
 
     vk::CommandBufferAllocateInfo allocInfo{};
     allocInfo.commandPool = commandPool;
-    allocInfo.level = vk::CommandBufferLevel::ePrimary;;
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;
     allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
     if (device.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess) {
@@ -1060,6 +1066,12 @@ void te::VulkanRenderManager::createSyncObjects()
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
+}
+
+void te::VulkanRenderManager::createPipelineCache()
+{
+    vk::PipelineCacheCreateInfo pipelineCacheCreateInfo = {}; 
+    device.createPipelineCache(&pipelineCacheCreateInfo, nullptr, &pipelineCache);
 }
 
 void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
@@ -1269,7 +1281,7 @@ vk::Format te::VulkanRenderManager::findDepthFormat()
 uint32_t te::VulkanRenderManager::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 {
 
-    vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
+    vk::PhysicalDeviceMemoryProperties memProperties = deviceMemoryProperties;
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -1333,20 +1345,7 @@ void te::VulkanRenderManager::createImage(uint32_t width, uint32_t height, uint3
    
 }
 
-vk::ShaderModule te::VulkanRenderManager::createShaderModule(const std::vector<char>& code)
-{
-    vk::ShaderModuleCreateInfo createInfo{};
-   
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-    vk::ShaderModule shaderModule;
-    if (device.createShaderModule(&createInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to create shader module!");
-    }
-
-    return shaderModule;
-}
 
 bool te::VulkanRenderManager::checkValidationLayerSupport()
 {

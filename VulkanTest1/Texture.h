@@ -1,32 +1,79 @@
 #ifndef GTEXTURE
 #define GTEXTURE
 
+#include <ktx.h>
+#include <ktxvulkan.h>
 
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
-namespace te
+
+namespace vks
 {
-	struct Texture {
-
+	class Texture
+	{
 	public:
-		vk::Device memoryHolderDevice;
+		vks::VulkanDevice* device;
+		VkImage               image;
+		VkImageLayout         imageLayout;
+		VkDeviceMemory        deviceMemory;
+		VkImageView           view;
+		uint32_t              width, height;
+		uint32_t              mipLevels;
+		uint32_t              layerCount;
+		VkDescriptorImageInfo descriptor;
+		VkSampler             sampler;
 
-		vk::ImageView textureView;
-		vk::Image texture;
-		vk::DeviceMemory textureDeviceMemory;
+		void      updateDescriptor();
+		void      destroy();
+		ktxResult loadKTXFile(std::string filename, ktxTexture** target);
+	};
 
-		Texture(char* path)
-		{
+	class Texture2D : public Texture
+	{
+	public:
+		void loadFromFile(
+			std::string        filename,
+			VkFormat           format,
+			vks::VulkanDevice* device,
+			VkQueue            copyQueue,
+			VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			VkImageLayout      imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			bool               forceLinear = false);
+		void fromBuffer(
+			void* buffer,
+			VkDeviceSize       bufferSize,
+			VkFormat           format,
+			uint32_t           texWidth,
+			uint32_t           texHeight,
+			vks::VulkanDevice* device,
+			VkQueue            copyQueue,
+			VkFilter           filter = VK_FILTER_LINEAR,
+			VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			VkImageLayout      imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	};
 
-		}
+	class Texture2DArray : public Texture
+	{
+	public:
+		void loadFromFile(
+			std::string        filename,
+			VkFormat           format,
+			vks::VulkanDevice* device,
+			VkQueue            copyQueue,
+			VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			VkImageLayout      imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	};
 
-		~Texture()
-		{
-			
-			vkDestroyImageView(memoryHolderDevice, textureView, nullptr);
-			vkDestroyImage(memoryHolderDevice, texture, nullptr);
-			vkFreeMemory(memoryHolderDevice, textureDeviceMemory, nullptr);
-		}
+	class TextureCubeMap : public Texture
+	{
+	public:
+		void loadFromFile(
+			std::string        filename,
+			VkFormat           format,
+			vks::VulkanDevice* device,
+			VkQueue            copyQueue,
+			VkImageUsageFlags  imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			VkImageLayout      imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	};
 }
 

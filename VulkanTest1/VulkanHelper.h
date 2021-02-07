@@ -13,6 +13,9 @@ namespace te
 
 
 		public:
+
+			static vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char>& code);
+
 			static vk::CommandBuffer beginSingleTimeCommands(
 				vk::CommandPool commandPool,
 				vk::Device device

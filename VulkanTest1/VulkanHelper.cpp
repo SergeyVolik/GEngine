@@ -42,6 +42,21 @@ void te::vkh::VulkanHelper::endSingleTimeCommands(
     device.freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
+vk::ShaderModule te::vkh::VulkanHelper::createShaderModule(vk::Device device, const std::vector<char>& code)
+{
+    vk::ShaderModuleCreateInfo createInfo{};
+
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+    vk::ShaderModule shaderModule;
+    if (device.createShaderModule(&createInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
+        throw std::runtime_error("failed to create shader module!");
+    }
+
+    return shaderModule;
+}
+
 vk::CommandBuffer te::vkh::VulkanHelper::beginSingleTimeCommands(vk::CommandPool commandPool, vk::Device device)
 {
     vk::CommandBufferAllocateInfo allocInfo{};
@@ -115,8 +130,8 @@ void te::vkh::VulkanHelper::createVertexBuffer(
 
     te::vkh::VulkanHelper::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, graphicsQueue, commandPool, device);
 
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    device.destroyBuffer(stagingBuffer, nullptr);
+    device.freeMemory(stagingBufferMemory, nullptr);
 }
 
 void te::vkh::VulkanHelper::createIndexBuffer(
@@ -143,9 +158,10 @@ void te::vkh::VulkanHelper::createIndexBuffer(
     );
 
     void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+   
+    device.mapMemory(stagingBufferMemory, 0, bufferSize, {}, &data);
     memcpy(data, indices.data(), (size_t)bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
+    device.unmapMemory(stagingBufferMemory);
 
     createBuffer(
         bufferSize,
@@ -158,8 +174,8 @@ void te::vkh::VulkanHelper::createIndexBuffer(
 
     te::vkh::VulkanHelper::copyBuffer(stagingBuffer, indexBuffer, bufferSize, graphicsQueue, commandPool, device);
 
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    device.destroyBuffer(stagingBuffer, nullptr);
+    device.freeMemory(stagingBufferMemory, nullptr);
 }
 
 
@@ -195,7 +211,8 @@ void te::vkh::VulkanHelper::createBuffer(
         throw std::runtime_error("failed to allocate buffer memory!");
     }
 
-    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+   
+    device.bindBufferMemory(buffer, bufferMemory, 0);
 }
 
  uint32_t te::vkh::VulkanHelper::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties, vk::PhysicalDevice physicalDevice)

@@ -104,8 +104,16 @@ namespace te
         vk::Instance vulkanInstance;
 
         //физическое устройства GPU (видео карта)
+
         vk::PhysicalDevice physicalDevice;
 
+        vk::PhysicalDeviceProperties deviceProperties;
+        // Stores the features available on the selected physical device (for e.g. checking if a feature is available)
+        vk::PhysicalDeviceFeatures deviceFeatures;
+        // Stores all available memory (type) properties for the physical device
+        vk::PhysicalDeviceMemoryProperties deviceMemoryProperties;
+
+      
         //логическое устройство созданое на основе физического устройства 
         // необходино для взаимодествия с драйвером физического устройства
         vk::Device device;
@@ -155,7 +163,7 @@ namespace te
         vk::DescriptorSetLayout descriptorSetLayout;
         vk::PipelineLayout pipelineLayout;
         vk::Pipeline graphicsPipeline;
-
+        vk::PipelineCache pipelineCache;
         vk::CommandPool commandPool;
 
         //очередь команд для вычисления елементов графики
@@ -255,7 +263,7 @@ namespace te
         void createDescriptorSets();
         void createCommandBuffers();
         void createSyncObjects();
-       
+        void createPipelineCache();
         void updateUniformBuffer(uint32_t currentImage);
       
 
@@ -285,7 +293,7 @@ namespace te
         uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
         vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
         void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory);
-        vk::ShaderModule createShaderModule(const std::vector<char>& code);
+     
         bool checkValidationLayerSupport();
 
         //перестройка ципочки обновлений (двойная-тройная буферизация) после изменения размеров окна
