@@ -162,6 +162,7 @@
     <ClCompile Include="AssetsLoader.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FileReader.cpp" />
+    <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="LoggerManager.cpp" />
     <ClCompile Include="main.cpp" />
@@ -174,6 +175,7 @@
     <ClCompile Include="UIOverlay.cpp" />
     <ClCompile Include="VulkanHelper.cpp" />
     <ClCompile Include="VulkanRenderManager.cpp" />
+    <ClCompile Include="VulkanTexture.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
@@ -184,6 +186,7 @@
     <ClInclude Include="EngineSystem.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="FileReader.h" />
+    <ClInclude Include="GameEngine.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="LoggerManager.h" />
     <ClInclude Include="Material.h" />
@@ -191,11 +194,12 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="SimplerModelTransformations.h" />
     <ClInclude Include="Singleton.h" />
-    <ClInclude Include="Texture.h" />
+    <ClInclude Include="VulkanTexture.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="UIOverlay.h" />
     <ClInclude Include="Vertex.h" />
+    <ClInclude Include="VulkanDevice.h" />
     <ClInclude Include="VulkanHelper.h" />
     <ClInclude Include="VulkanRenderManager.h" />
     <ClInclude Include="VulkanTools.h" />

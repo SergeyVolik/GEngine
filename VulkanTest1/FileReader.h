@@ -3,12 +3,14 @@
 
 #include<vector>
 #include <string>
+
 namespace te
 {
 	class FileReader
 	{
 	public:
 		static std::vector<char> readFile(const std::string& filename);
+		static bool fileExists(const char* filename);
 	};
 }
 

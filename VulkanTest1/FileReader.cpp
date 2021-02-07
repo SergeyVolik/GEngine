@@ -18,3 +18,9 @@ std::vector<char> te::FileReader::readFile(const std::string& filename)
 
     return buffer;
 }
+
+bool te::FileReader::fileExists(const char* filename)
+{
+    std::ifstream f(filename);
+    return !f.fail();
+}
