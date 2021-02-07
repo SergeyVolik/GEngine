@@ -13,7 +13,7 @@ namespace te
 
     public:
         void run();
-
+        static void exitFatal(const std::string& message, int32_t exitCode);
     private:
 
         te::Window* window;
@@ -26,7 +26,7 @@ namespace te
 
         void cleanup();
 
-        static void exitFatal(const std::string& message, int32_t exitCode);
+      
 
 
 

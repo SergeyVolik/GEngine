@@ -8,7 +8,8 @@
 #include <vulkan/vulkan.hpp>
 #include "VulkanDevice.h"
 #include "FileReader.h"
-#include "Application.h"
+#include "GameEngine.h"
+
 namespace vkh
 {
 	class Texture
