@@ -37,6 +37,21 @@ namespace te
 				vk::Device device
 			);
 
+			static vk::Bool32 formatIsFilterable(vk::PhysicalDevice physicalDevice, vk::Format format, vk::ImageTiling tiling);
+
+			static void insertImageMemoryBarrier(vk::CommandBuffer cmdbuffer, vk::Image image, vk::AccessFlags srcAccessMask, vk::AccessFlags dstAccessMask, vk::ImageLayout oldImageLayout, vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask, vk::ImageSubresourceRange subresourceRange);
+
+			static void setImageLayout(vk::CommandBuffer cmdbuffer,
+				vk::Image image, vk::ImageLayout oldImageLayout,
+				vk::ImageLayout newImageLayout, vk::ImageSubresourceRange subresourceRange,
+				vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
+
+			static void setImageLayout(vk::CommandBuffer cmdbuffer,
+				vk::Image image, vk::ImageAspectFlags aspectMask, vk::ImageLayout oldImageLayout,
+				vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
+
 			//static void pickPhysicalDevice();
 			static std::vector<vk::PhysicalDevice> getPhysicalDevices(
 				vk::Instance instance
@@ -91,6 +106,8 @@ namespace te
 				vk::Queue graphicsQueue,
 				vk::Device device
 			);
+
+			
 		};
 	}
 	

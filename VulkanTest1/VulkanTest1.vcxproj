@@ -159,7 +159,14 @@
     <ClCompile Include="..\external\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\external\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\external\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\external\ktx\lib\checkheader.c" />
+    <ClCompile Include="..\external\ktx\lib\filestream.c" />
+    <ClCompile Include="..\external\ktx\lib\hashlist.c" />
+    <ClCompile Include="..\external\ktx\lib\memstream.c" />
+    <ClCompile Include="..\external\ktx\lib\swap.c" />
+    <ClCompile Include="..\external\ktx\lib\texture.c" />
     <ClCompile Include="AssetsLoader.cpp" />
+    <ClCompile Include="VulkanBuffer.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FileReader.cpp" />
     <ClCompile Include="GameEngine.cpp" />
@@ -173,14 +180,18 @@
     <ClCompile Include="SceneManager.h" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="UIOverlay.cpp" />
+    <ClCompile Include="VulkanDevice.cpp" />
     <ClCompile Include="VulkanHelper.cpp" />
     <ClCompile Include="VulkanRenderManager.cpp" />
     <ClCompile Include="VulkanTexture.cpp" />
+    <ClCompile Include="VulkanValidate.cpp" />
+    <ClCompile Include="VulkanValidate.h" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssetsLoader.h" />
+    <ClInclude Include="VulkanBuffer.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="EngineSystem.h" />

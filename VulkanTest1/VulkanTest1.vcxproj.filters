@@ -48,6 +48,9 @@
     <Filter Include="Code\Systems\Rendering\Vulkan\UI\ImGui">
       <UniqueIdentifier>{8224da6b-47bf-475e-af83-eb172fffcd15}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Systems\Rendering\Vulkan\ktx">
+      <UniqueIdentifier>{19694afe-0d7d-4007-b7a5-ef8c516880ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -118,6 +121,36 @@
     </ClCompile>
     <ClCompile Include="GameEngine.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanBuffer.cpp">
+      <Filter>Code\Systems\Rendering\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanDevice.cpp">
+      <Filter>Code\Systems\Rendering\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanValidate.h">
+      <Filter>Code\Systems\Rendering\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="VulkanValidate.cpp">
+      <Filter>Code\Systems\Rendering\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\ktx\lib\memstream.c">
+      <Filter>Code\Systems\Rendering\Vulkan\ktx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\ktx\lib\swap.c">
+      <Filter>Code\Systems\Rendering\Vulkan\ktx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\ktx\lib\texture.c">
+      <Filter>Code\Systems\Rendering\Vulkan\ktx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\ktx\lib\hashlist.c">
+      <Filter>Code\Systems\Rendering\Vulkan\ktx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\ktx\lib\checkheader.c">
+      <Filter>Code\Systems\Rendering\Vulkan\ktx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\ktx\lib\filestream.c">
+      <Filter>Code\Systems\Rendering\Vulkan\ktx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -195,6 +228,9 @@
     </ClInclude>
     <ClInclude Include="GameEngine.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="VulkanBuffer.h">
+      <Filter>Code\Systems\Rendering\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

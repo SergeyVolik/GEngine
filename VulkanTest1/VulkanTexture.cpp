@@ -8,6 +8,7 @@
 
 #include "VulkanTexture.h"
 #include "VulkanValidate.h"
+#include "VulkanHelper.h"
 namespace vkh
 {
 	void Texture::updateDescriptor()
@@ -176,11 +177,11 @@ namespace vkh
 
 			// Image barrier for optimal image (target)
 			// Optimal image will be used as destination for the copy
-			vks::tools::setImageLayout(
+			te::vkh::VulkanHelper::setImageLayout(
 				copyCmd,
 				image,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				vk::ImageLayout::eUndefined,
+				vk::ImageLayout::eTransferDstOptimal,
 				subresourceRange);
 
 			// Copy mip levels from staging buffer
@@ -194,10 +195,10 @@ namespace vkh
 
 			// Change texture image layout to shader read after all mip levels have been copied
 			this->imageLayout = imageLayout;
-			vks::tools::setImageLayout(
+			te::vkh::VulkanHelper::setImageLayout(
 				copyCmd,
 				image,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				vk::ImageLayout::eTransferDstOptimal,
 				imageLayout,
 				subresourceRange);
 
@@ -279,7 +280,7 @@ namespace vkh
 			this->imageLayout = imageLayout;
 
 			// Setup image memory barrier
-			vks::tools::setImageLayout(copyCmd, image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, imageLayout);
+			te::vkh::VulkanHelper::setImageLayout(copyCmd, image, vk::ImageAspectFlagBits::eColor, vk::ImageLayout::eUndefined, imageLayout);
 
 			device->flushCommandBuffer(copyCmd, copyQueue);
 		}
@@ -432,11 +433,11 @@ namespace vkh
 
 		// Image barrier for optimal image (target)
 		// Optimal image will be used as destination for the copy
-		vks::tools::setImageLayout(
+		te::vkh::VulkanHelper::setImageLayout(
 			copyCmd,
 			image,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			vk::ImageLayout::eUndefined,
+			vk::ImageLayout::eTransferDstOptimal,
 			subresourceRange);
 
 		// Copy mip levels from staging buffer
@@ -452,10 +453,10 @@ namespace vkh
 		// Change texture image layout to shader read after all mip levels have been copied
 		this->imageLayout = imageLayout;
 
-		vks::tools::setImageLayout(
+		te::vkh::VulkanHelper::setImageLayout(
 			copyCmd,
 			image,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			vk::ImageLayout::eTransferDstOptimal,
 			imageLayout,
 			subresourceRange);
 
@@ -623,11 +624,11 @@ namespace vkh
 		subresourceRange.levelCount = mipLevels;
 		subresourceRange.layerCount = layerCount;
 
-		vks::tools::setImageLayout(
+		te::vkh::VulkanHelper::setImageLayout(
 			copyCmd,
 			image,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			vk::ImageLayout::eUndefined,
+			vk::ImageLayout::eTransferDstOptimal,
 			subresourceRange);
 
 		// Copy the layers and mip levels from the staging buffer to the optimal tiled image
@@ -640,10 +641,10 @@ namespace vkh
 	
 		// Change texture image layout to shader read after all faces have been copied
 		this->imageLayout = imageLayout;
-		vks::tools::setImageLayout(
+		te::vkh::VulkanHelper::setImageLayout(
 			copyCmd,
 			image,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			vk::ImageLayout::eTransferDstOptimal,
 			imageLayout,
 			subresourceRange);
 
@@ -814,11 +815,11 @@ namespace vkh
 		subresourceRange.levelCount = mipLevels;
 		subresourceRange.layerCount = 6;
 
-		vks::tools::setImageLayout(
+		te::vkh::VulkanHelper::setImageLayout(
 			copyCmd,
 			image,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			vk::ImageLayout::eUndefined,
+			vk::ImageLayout::eTransferDstOptimal,
 			subresourceRange);
 
 		// Copy the cube map faces from the staging buffer to the optimal tiled image
@@ -832,10 +833,10 @@ namespace vkh
 		// Change texture image layout to shader read after all faces have been copied
 		this->imageLayout = imageLayout;
 
-		vks::tools::setImageLayout(
+		te::vkh::VulkanHelper::setImageLayout(
 			copyCmd,
 			image,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			vk::ImageLayout::eTransferDstOptimal,
 			imageLayout,
 			subresourceRange);
 
