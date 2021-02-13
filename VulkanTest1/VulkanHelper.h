@@ -4,10 +4,42 @@
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include "Vertex.h"
+#include <optional>
 namespace te
 {
 	namespace vkh
 	{
+		struct SwapChainSupportDetails {
+
+
+			vk::SurfaceCapabilitiesKHR capabilities;
+			std::vector<vk::SurfaceFormatKHR> formats;
+			std::vector<vk::PresentModeKHR> presentModes;
+		};
+
+		struct VukanDevice
+		{
+			vk::Device logicalDevice;
+			vk::PhysicalDevice physicalDevice;
+			vk::Instance instance;
+
+			VukanDevice(vk::Device logicalDevice,
+				vk::PhysicalDevice physicalDevice,
+				vk::Instance instance) : logicalDevice(logicalDevice), physicalDevice(physicalDevice), instance(instance)
+			{
+
+			}
+		};
+
+		struct QueueFamilyIndices {
+			std::optional<uint32_t> graphicsFamily;
+			std::optional<uint32_t> presentFamily;
+			std::optional<uint32_t> transferFamily;
+			bool isComplete() {
+				return graphicsFamily.has_value() && presentFamily.has_value() && transferFamily.has_value();
+			}
+		};
+
 		class VulkanHelper
 		{
 
@@ -52,10 +84,6 @@ namespace te
 				vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
 				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
 
-			//static void pickPhysicalDevice();
-			static std::vector<vk::PhysicalDevice> getPhysicalDevices(
-				vk::Instance instance
-			);
 
 			static void createVertexBuffer(
 				std::vector<te::Vertex> vertices,
@@ -106,6 +134,13 @@ namespace te
 				vk::Queue graphicsQueue,
 				vk::Device device
 			);
+
+			static vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, vk::Device device);
+
+			static QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+
+			static te::vkh::SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
+			
 
 			
 		};

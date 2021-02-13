@@ -44,6 +44,8 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include "Entity.h"
 #include "Transform.h"
 #include "Renderer.h"
+#include "VulkanHelper.h"
+#include "SwapChain.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -75,20 +77,6 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 proj;
 };
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-struct SwapChainSupportDetails {
-    vk::SurfaceCapabilitiesKHR capabilities;
-    std::vector<vk::SurfaceFormatKHR> formats;
-    std::vector<vk::PresentModeKHR> presentModes;
-};
 
 namespace te
 {
@@ -102,10 +90,12 @@ namespace te
 
         //декриптор инстанса библиотеки вулкан
         vk::Instance vulkanInstance;
-
         //физическое устройства GPU (видео карта)
-
         vk::PhysicalDevice physicalDevice;
+
+        vk::SurfaceKHR surface;
+
+        vkGame::SwapChain* mySwapChain;
 
         vk::PhysicalDeviceProperties deviceProperties;
         // Stores the features available on the selected physical device (for e.g. checking if a feature is available)
@@ -119,31 +109,8 @@ namespace te
         vk::Device device;
 
         //дескриптор дебаг мессенджера библиотеки вулкан
-        vk::DebugUtilsMessengerEXT debugMessenger;
-     
- 
-
-        //-------------------------------------двойная-тройная буферизация---------------------------------------------
-        //поверхность для выводна на екран
-        vk::SurfaceKHR surface;
-
-        // дескриптов для дувойной-тройной буферизации
-        vk::SwapchainKHR swapChain;
-
-        //список изображений для каждого кадра последовательности буферзации изображений SwapchainKHR
-        std::vector<vk::Image> swapChainImages;
-
-        //вью изображения для прямого обрашению к изображению
-        std::vector<vk::ImageView> swapChainImageViews;
-
-        //буфер изображения двойной-тройной буферизации
-        std::vector<vk::Framebuffer> swapChainFramebuffers;
-
-        //цветовой формат отображенного изображения
-        vk::Format swapChainImageFormat;
-
-        //разрежение екрана отображения
-        vk::Extent2D swapChainExtent;
+        vk::DebugUtilsMessengerEXT debugMessenger;   
+        
 
         //-------------------------------------------- синхронизация двойной буферизации------------------------------
 
@@ -167,10 +134,19 @@ namespace te
         vk::CommandPool commandPool;
 
         //очередь команд для вычисления елементов графики
-        vk::Queue graphicsQueue;
+
+        struct
+        {
+            vk::Queue graphicsQueue;
+            vk::Queue presentQueue;
+            vk::Queue transferQueue;
+
+        } vulkanQueues;
+
+      
 
         //презентационная очередь для отображения на поверхность  SurfaceKHR
-        vk::Queue presentQueue;
+     
         vk::Image depthImage;
         vk::DeviceMemory depthImageMemory;
         vk::ImageView depthImageView;
@@ -226,11 +202,6 @@ namespace te
         //создание логического устройсива вулка для взаимодействия с драйвером устройства
         void createLogicalDevice();
 
-        //создание елемента SwapChain для двойной-тройной буферизации
-        void createSwapChain();
-
-        //создание отображения SwapChain  в Image views
-        void createSwapChainImageViews();
 
         //настройка структуры для прохода рендеринга (настройка цвета, глубины изображения)
         void createRenderPass();
@@ -272,16 +243,13 @@ namespace te
         
     
        
-        vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels);
+       
         void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
         std::vector<const char*> getRequiredExtensions();
         bool isDeviceSuitable(vk::PhysicalDevice device);
-        QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
-        SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
-        vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
+       
+
         bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
-        vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
-        vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -313,6 +281,7 @@ namespace te
       
         void cleanupSwapChain();
         void drawFrame();
+        void createSwapchain();
         static void initialize(te::Window* wnd);
 
         static void terminate();

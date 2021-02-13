@@ -270,17 +270,6 @@ vk::CommandBuffer te::vkh::VulkanHelper::beginSingleTimeCommands(vk::CommandPool
     return commandBuffer;
 }
 
-std::vector<vk::PhysicalDevice> te::vkh::VulkanHelper::getPhysicalDevices(vk::Instance instance)
-{
-
-    std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
-
-    if (devices.size() == 0) {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
-    }
-
-    return devices;
-}
 
 void te::vkh::VulkanHelper::createVertexBuffer(
     std::vector<te::Vertex> vertices,
@@ -372,8 +361,74 @@ void te::vkh::VulkanHelper::createIndexBuffer(
     device.freeMemory(stagingBufferMemory, nullptr);
 }
 
+vk::ImageView  te::vkh::VulkanHelper::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, vk::Device device)
+{
+    vk::ImageViewCreateInfo viewInfo{};
+
+    viewInfo.image = image;
+    viewInfo.viewType = vk::ImageViewType::e2D;
+    viewInfo.format = format;
+    viewInfo.subresourceRange.aspectMask = aspectFlags;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = mipLevels;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    vk::ImageView imageView;
+    if (device.createImageView(&viewInfo, nullptr, &imageView) != vk::Result::eSuccess) {
+        throw std::runtime_error("failed to create texture image view!");
+    }
+
+    return imageView;
+}
+
+te::vkh::QueueFamilyIndices te::vkh::VulkanHelper::findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface)
+{
+    QueueFamilyIndices indices;
 
 
+    std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+            indices.graphicsFamily = i;
+        }
+
+        if (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer)
+        {
+            indices.transferFamily = i;
+        }
+
+        vk::Bool32 presentSupport = false;
+        device.getSurfaceSupportKHR(i, surface, &presentSupport);
+
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+
+        if (indices.isComplete()) {
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
+ te::vkh::SwapChainSupportDetails te::vkh::VulkanHelper::querySwapChainSupport(
+     vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
+{
+     te::vkh::SwapChainSupportDetails details = {};
+
+    physicalDevice.getSurfaceCapabilitiesKHR(surface, &details.capabilities);
+
+    details.formats = physicalDevice.getSurfaceFormatsKHR(surface);
+
+    details.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
+
+    return details;
+}
 
 void te::vkh::VulkanHelper::createBuffer(
     vk::DeviceSize size,

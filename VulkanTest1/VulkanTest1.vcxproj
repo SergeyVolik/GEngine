@@ -191,6 +191,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssetsLoader.h" />
+    <ClInclude Include="SwapChain.h" />
     <ClInclude Include="VulkanBuffer.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Component.h" />
