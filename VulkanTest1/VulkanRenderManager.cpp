@@ -1287,10 +1287,6 @@ void te::VulkanRenderManager::cleanupSwapChain()
 
     mySwapChain->destroyFramebuffers();
 
-    /*for (auto framebuffer : swapChainFramebuffers) {
-         vulkanDevice->logicalDevice.destroyFramebuffer(framebuffer, nullptr);
-    }*/
-
      vulkanDevice->logicalDevice.freeCommandBuffers(commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
      vulkanDevice->logicalDevice.destroyPipeline( graphicsPipeline, nullptr);

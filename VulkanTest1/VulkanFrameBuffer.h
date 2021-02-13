@@ -73,9 +73,19 @@ namespace vkGame
 
 	class VulkanFrameBuffer
 	{
+		
+
 	private:
 		te::vkh::VulkanDevice* vulkanDevice;
+		
+
 	public:
+
+		uint32_t width, height;
+		vk::Framebuffer framebuffer;
+		vk::RenderPass renderPass;
+		vk::Sampler sampler;
+		std::vector<FramebufferAttachment> attachments;
 
 		/**
 		* Default constructor
@@ -86,6 +96,28 @@ namespace vkGame
 		{
 			assert(vulkanDevice);
 			this->vulkanDevice = vulkanDevice;
+		}
+
+		~VulkanFrameBuffer()
+		{
+			vulkanDevice->logicalDevice.destroyFramebuffer(framebuffer, nullptr);
+		}
+
+		void createFramebuffer(std::vector<vk::ImageView> attachments, vk::RenderPass renderPass)
+		{
+			vk::FramebufferCreateInfo framebufferInfo{};
+
+			framebufferInfo.renderPass = renderPass;
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebufferInfo.pAttachments = attachments.data();
+			framebufferInfo.width = width;
+			framebufferInfo.height = height;
+			framebufferInfo.layers = 1;
+
+			if (vulkanDevice->logicalDevice.createFramebuffer(&framebufferInfo, nullptr, &framebuffer) != vk::Result::eSuccess) {
+				throw std::runtime_error("failed to create framebuffer!");
+			}
+			
 		}
 
 	};

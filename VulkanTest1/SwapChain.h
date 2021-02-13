@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "VulkanHelper.h"
-
+#include "VulkanFrameBuffer.h"
 namespace vkGame {
 
    
@@ -32,10 +32,10 @@ namespace vkGame {
         std::vector<vk::ImageView> swapChainImageViews;
 
         //буфер изображения двойной-тройной буферизации
-        std::vector<vk::Framebuffer> swapChainFramebuffers;
+        std::vector <vkGame::VulkanFrameBuffer*> swapChainFramebuffers;
 
         //цветовой формат отображенного изображения
-        vk::Format swapChainImageFormat;
+        vk::Format colorFormat;
 
         //разрежение екрана отображения
         vk::Extent2D swapChainExtent;
@@ -50,7 +50,7 @@ namespace vkGame {
             swapChainImageViews.resize(swapChainImages.size());
 
             for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-                swapChainImageViews[i] = te::vkh::VulkanHelper::createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor, 1, device->logicalDevice);
+                swapChainImageViews[i] = te::vkh::VulkanHelper::createImageView(swapChainImages[i], colorFormat, vk::ImageAspectFlagBits::eColor, 1, device->logicalDevice);
             }
         }
 
@@ -159,7 +159,7 @@ namespace vkGame {
 
             swapChainImages = device->logicalDevice.getSwapchainImagesKHR(swapChain);
 
-            swapChainImageFormat = surfaceFormat.format;
+            colorFormat = surfaceFormat.format;
             swapChainExtent = extent;
 
             createSwapChainImageViews();
@@ -178,7 +178,7 @@ namespace vkGame {
         }
         vk::Format getImageFormat()
         {
-            return swapChainImageFormat;
+            return colorFormat;
         }
 
         vk::Extent2D getExtent()
@@ -189,9 +189,10 @@ namespace vkGame {
         
 
         void destroyFramebuffers()
-        {
-            for (auto framebuffer : swapChainFramebuffers) {
-                device->logicalDevice.destroyFramebuffer(framebuffer, nullptr);
+        {          
+            for (int i = 0; i < swapChainFramebuffers.size(); i++)
+            {
+                delete swapChainFramebuffers[i];
             }
         }
     
@@ -199,35 +200,31 @@ namespace vkGame {
 
         vk::Framebuffer getFrameBufferByIndex(int i)
         {
-            return swapChainFramebuffers[i];
+            return swapChainFramebuffers[i]->framebuffer;
         }
 
         vk::SwapchainKHR getSwapchain()
         {
             return swapChain;
         }
+
         void createFramebuffers(vk::ImageView depthImageView, vk::RenderPass renderPass)
         {
             swapChainFramebuffers.resize(swapChainImageViews.size());
-
+            
+           
             for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-                std::array<vk::ImageView, 2> attachments = {
+                swapChainFramebuffers[i] = new vkGame::VulkanFrameBuffer(device);
+
+                std::vector<vk::ImageView> attachments = {
                     swapChainImageViews[i],
                     depthImageView
                 };
 
-                vk::FramebufferCreateInfo framebufferInfo{};
+                swapChainFramebuffers[i]->width = swapChainExtent.width;
+                swapChainFramebuffers[i]->height = swapChainExtent.height;
+                swapChainFramebuffers[i]->createFramebuffer(attachments, renderPass);
 
-                framebufferInfo.renderPass = renderPass;
-                framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-                framebufferInfo.pAttachments = attachments.data();
-                framebufferInfo.width = swapChainExtent.width;
-                framebufferInfo.height = swapChainExtent.height;
-                framebufferInfo.layers = 1;
-
-                if (device->logicalDevice.createFramebuffer(&framebufferInfo, nullptr, &swapChainFramebuffers[i]) != vk::Result::eSuccess) {
-                    throw std::runtime_error("failed to create framebuffer!");
-                }
             }
         }
 
