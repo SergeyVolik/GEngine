@@ -19,6 +19,7 @@ namespace te
 
 		class VulkanDevice
 		{
+		public:
 			vk::Device logicalDevice;
 			vk::PhysicalDevice physicalDevice;
 			vk::Instance instance;

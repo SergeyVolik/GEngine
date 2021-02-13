@@ -47,8 +47,9 @@ void te::VulkanRenderManager::createInstance()
         createInfo.pNext = nullptr;
     }
 
-    vulkanDevice = new 
-    if (vk::createInstance(&createInfo, nullptr, &vulkanInstance) != vk::Result::eSuccess) {
+    vulkanDevice = new te::vkh::VulkanDevice();
+   
+    if (vk::createInstance(&createInfo, nullptr, &vulkanDevice->instance) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create instance!");
     }
 }
@@ -56,33 +57,33 @@ void te::VulkanRenderManager::createInstance()
 #pragma endregion
 
 
-#pragma region selection device
+#pragma region selection  vulkanDevice->logicalDevice
 
 void te::VulkanRenderManager::pickPhysicalDevice()
 {
 
-    std::vector<vk::PhysicalDevice> devices = vulkanInstance.enumeratePhysicalDevices();
+    std::vector<vk::PhysicalDevice> devices = vulkanDevice->instance.enumeratePhysicalDevices();
 
-    for (const auto& device : devices) {
-        if (isDeviceSuitable(device)) {
-            physicalDevice = device;
+    for (const auto& pDevice : devices) {
+        if (isDeviceSuitable(pDevice)) {
+            vulkanDevice->physicalDevice = pDevice;
             break;
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if ( vulkanDevice->physicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
-    physicalDevice.getProperties(&deviceProperties);
-    physicalDevice.getFeatures(&deviceFeatures);
-    physicalDevice.getMemoryProperties(&deviceMemoryProperties);
+     vulkanDevice->physicalDevice.getProperties(&deviceProperties);
+     vulkanDevice->physicalDevice.getFeatures(&deviceFeatures);
+     vulkanDevice->physicalDevice.getMemoryProperties(&deviceMemoryProperties);
 
 }
 
 void te::VulkanRenderManager::createLogicalDevice()
 {
-    te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies(physicalDevice, surface);
+    te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies( vulkanDevice->physicalDevice, surface);
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
@@ -119,20 +120,20 @@ void te::VulkanRenderManager::createLogicalDevice()
         createInfo.enabledLayerCount = 0;
     }
    
-    if (physicalDevice.createDevice(&createInfo, nullptr, &device) != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to create logical device!");
+    if ( vulkanDevice->physicalDevice.createDevice(&createInfo, nullptr, &vulkanDevice->logicalDevice) != vk::Result::eSuccess) {
+        throw std::runtime_error("failed to create logical  vulkanDevice->logicalDevice!");
     }
     
-    device.getQueue(indices.graphicsFamily.value(), 0, &vulkanQueues.graphicsQueue);
-    device.getQueue(indices.presentFamily.value(), 0, &vulkanQueues.presentQueue);
-    device.getQueue(indices.transferFamily.value(), 0, &vulkanQueues.transferQueue);
+     vulkanDevice->logicalDevice.getQueue(indices.graphicsFamily.value(), 0, &vulkanQueues.graphicsQueue);
+     vulkanDevice->logicalDevice.getQueue(indices.presentFamily.value(), 0, &vulkanQueues.presentQueue);
+     vulkanDevice->logicalDevice.getQueue(indices.transferFamily.value(), 0, &vulkanQueues.transferQueue);
    
 }
 #pragma endregion
 
 void te::VulkanRenderManager::createSwapchain()
 {
-    mySwapChain = new vkGame::SwapChain(surface, te::vkh::VulkanDevice(device, physicalDevice, vulkanInstance));
+    mySwapChain = new vkGame::SwapChain(surface, vulkanDevice);
     int width, height;
     window->getFramebufferSize(&width, &height);
     mySwapChain->createSwapChain(width, height);
@@ -147,7 +148,7 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
    
     instance->createInstance();
 
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance->vulkanInstance);
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance->vulkanDevice->instance);
 
     instance->setupDebugMessenger();
     instance->createSurface();
@@ -199,41 +200,43 @@ void te::VulkanRenderManager::terminate()
     instance->cleanupSwapChain();
 
     // удаление даных о текстуре в  GPU
-    instance->device.destroySampler(instance->textureSampler, nullptr);
-    instance->device.destroyImageView(instance->textureImageView, nullptr);
-    instance->device.destroyImage(instance->textureImage, nullptr);
-    instance->device.freeMemory(instance->textureImageMemory, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroySampler(instance->textureSampler, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyImageView(instance->textureImageView, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyImage(instance->textureImage, nullptr);
+    instance-> vulkanDevice->logicalDevice.freeMemory(instance->textureImageMemory, nullptr);
 
 
-    instance->device.destroyDescriptorSetLayout(instance->descriptorSetLayout, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyDescriptorSetLayout(instance->descriptorSetLayout, nullptr);
 
-    instance->device.destroyBuffer(instance->_indexBuffer, nullptr);
-    instance->device.freeMemory(instance->_indexBufferMemory, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyBuffer(instance->_indexBuffer, nullptr);
+    instance-> vulkanDevice->logicalDevice.freeMemory(instance->_indexBufferMemory, nullptr);
 
-    instance->device.destroyBuffer(instance->vertexBuffer, nullptr);
-    instance->device.freeMemory(instance->vertexBufferMemory, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyBuffer(instance->vertexBuffer, nullptr);
+    instance-> vulkanDevice->logicalDevice.freeMemory(instance->vertexBufferMemory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        instance->device.destroySemaphore(instance->renderFinishedSemaphores[i], nullptr);
-        instance->device.destroySemaphore(instance->imageAvailableSemaphores[i], nullptr);
-        instance->device.destroyFence(instance->inFlightFences[i], nullptr);
+        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->renderFinishedSemaphores[i], nullptr);
+        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->imageAvailableSemaphores[i], nullptr);
+        instance-> vulkanDevice->logicalDevice.destroyFence(instance->inFlightFences[i], nullptr);
     }
 
-    instance->device.destroyPipelineCache(instance->pipelineCache, nullptr);
-    instance->device.destroyCommandPool(instance->commandPool, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyPipelineCache(instance->pipelineCache, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyCommandPool(instance->commandPool, nullptr);
 
-    instance->device.destroy();
+    instance-> vulkanDevice->logicalDevice.destroy();
 
     if (enableValidationLayers) {
-        instance->vulkanInstance.destroyDebugUtilsMessengerEXT(instance->debugMessenger, nullptr);
+        instance->vulkanDevice->instance.destroyDebugUtilsMessengerEXT(instance->debugMessenger, nullptr);
     }
    
     delete instance->mySwapChain;
     
-    instance->vulkanInstance.destroy();
+    instance->vulkanDevice->instance.destroy();
+
+    delete instance->vulkanDevice;
 
     delete instance;
-
+   
 }
 #pragma region vulkan validation layer (debug)
 void te::VulkanRenderManager::setupDebugMessenger()
@@ -243,7 +246,7 @@ void te::VulkanRenderManager::setupDebugMessenger()
     vk::DebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (vulkanInstance.createDebugUtilsMessengerEXT(&createInfo, nullptr, &debugMessenger) != vk::Result::eSuccess) {
+    if (vulkanDevice->instance.createDebugUtilsMessengerEXT(&createInfo, nullptr, &debugMessenger) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to set up debug messenger!");
     }
 
@@ -255,7 +258,7 @@ void te::VulkanRenderManager::setupDebugMessenger()
 
 void te::VulkanRenderManager::createSurface()
 {
-    window->createSurface(vulkanInstance, &surface, nullptr);
+    window->createSurface(vulkanDevice->instance, &surface, nullptr);
 }
 
 
@@ -322,7 +325,7 @@ void te::VulkanRenderManager::createRenderPass()
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (device.createRenderPass(&renderPassInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createRenderPass(&renderPassInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create render pass!");
     }
 }
@@ -348,7 +351,7 @@ void te::VulkanRenderManager::createDescriptorSetLayout()
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     layoutInfo.pBindings = bindings.data();
 
-    if (device.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 }
@@ -360,8 +363,8 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     auto fragShaderCode = te::FileReader::readFile("shaders/frag.spv");
 
     //создание шейдерных модулей вулкана
-    vk::ShaderModule vertShaderModule = te::vkh::VulkanHelper::createShaderModule(device, vertShaderCode);
-    vk::ShaderModule fragShaderModule = te::vkh::VulkanHelper::createShaderModule(device, fragShaderCode);
+    vk::ShaderModule vertShaderModule = te::vkh::VulkanHelper::createShaderModule( vulkanDevice->logicalDevice, vertShaderCode);
+    vk::ShaderModule fragShaderModule = te::vkh::VulkanHelper::createShaderModule( vulkanDevice->logicalDevice, fragShaderCode);
 
     
     //создание структур для уровня шейдеров в графичксом пайплайне
@@ -479,7 +482,7 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
-    if (device.createPipelineLayout(&pipelineLayoutInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createPipelineLayout(&pipelineLayoutInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -499,24 +502,24 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = nullptr;
 
-    if (device.createGraphicsPipelines(pipelineCache, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createGraphicsPipelines(pipelineCache, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
     
-    device.destroyShaderModule(fragShaderModule, nullptr);
-    device.destroyShaderModule(vertShaderModule, nullptr);
+     vulkanDevice->logicalDevice.destroyShaderModule(fragShaderModule, nullptr);
+     vulkanDevice->logicalDevice.destroyShaderModule(vertShaderModule, nullptr);
 }
 
 void te::VulkanRenderManager::createCommandPool()
 {
-    te::vkh::QueueFamilyIndices queueFamilyIndices = te::vkh::VulkanHelper::findQueueFamilies(physicalDevice, surface);
+    te::vkh::QueueFamilyIndices queueFamilyIndices = te::vkh::VulkanHelper::findQueueFamilies( vulkanDevice->physicalDevice, surface);
 
     vk::CommandPoolCreateInfo poolInfo{};
    
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
     poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer; // для сброса всех команд просле прохода рендеринга
-    if (device.createCommandPool(&poolInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createCommandPool(&poolInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics command pool!");
     }
 }
@@ -537,7 +540,7 @@ void te::VulkanRenderManager::createDepthResources()
     );
     depthImageView = te::vkh::VulkanHelper::createImageView(
         depthImage, depthFormat,
-        vk::ImageAspectFlagBits::eDepth, 1, device);
+        vk::ImageAspectFlagBits::eDepth, 1,  vulkanDevice->logicalDevice);
 }
 
 void te::VulkanRenderManager::createFramebuffers()
@@ -566,12 +569,12 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
         imageSize,
         vk::BufferUsageFlagBits::eTransferSrc,
         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-        stagingBuffer, stagingBufferMemory, physicalDevice, device);
+        stagingBuffer, stagingBufferMemory,  vulkanDevice->physicalDevice,  vulkanDevice->logicalDevice);
 
     void* data;
-    device.mapMemory(stagingBufferMemory, 0, imageSize, {}, &data);
+     vulkanDevice->logicalDevice.mapMemory(stagingBufferMemory, 0, imageSize, {}, &data);
     memcpy(data, pixels, static_cast<size_t>(imageSize));
-    device.unmapMemory(stagingBufferMemory);
+     vulkanDevice->logicalDevice.unmapMemory(stagingBufferMemory);
 
     stbi_image_free(pixels);
 
@@ -602,11 +605,11 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
         static_cast<uint32_t>(texHeight),
         commandPool,
         vulkanQueues.graphicsQueue,
-        device
+         vulkanDevice->logicalDevice
     );
    
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    vkDestroyBuffer( vulkanDevice->logicalDevice, stagingBuffer, nullptr);
+    vkFreeMemory( vulkanDevice->logicalDevice, stagingBufferMemory, nullptr);
 
     generateMipmaps(
         textureImage,
@@ -623,7 +626,7 @@ void te::VulkanRenderManager::createTextureImageView(vk::ImageView& imgView, con
         textureImage,
         vk::Format::eR8G8B8A8Srgb,
         vk::ImageAspectFlagBits::eColor,
-        mipLevels, device
+        mipLevels,  vulkanDevice->logicalDevice
     );
 }
 
@@ -650,20 +653,20 @@ void te::VulkanRenderManager::createTextureSampler()
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0.0f;
 
-    if (device.createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
 
 void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
 {
-    vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(imageFormat);  
+    vk::FormatProperties formatProperties =  vulkanDevice->physicalDevice.getFormatProperties(imageFormat);  
 
     if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool, device);
+    vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool,  vulkanDevice->logicalDevice);
 
     vk::ImageMemoryBarrier barrier{};
  
@@ -745,12 +748,12 @@ void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageF
         {}, 0, nullptr, 0, nullptr, 1, &barrier
     );
 
-    te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool, device);
+    te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool,  vulkanDevice->logicalDevice);
 }
 
 void te::VulkanRenderManager::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels)
 {
-    vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool, device);
+    vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool,  vulkanDevice->logicalDevice);
 
     vk::ImageMemoryBarrier barrier{};
    
@@ -796,7 +799,7 @@ void te::VulkanRenderManager::transitionImageLayout(vk::Image image, vk::Format 
 
     );
 
-    te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool, device);
+    te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool,  vulkanDevice->logicalDevice);
 }
 
 
@@ -822,8 +825,8 @@ void te::VulkanRenderManager::createVulkanMemoryAllocator()
 {
    /* VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
-    allocatorInfo.physicalDevice = physicalDevice;
-    allocatorInfo.device = device;
+    allocatorInfo. vulkanDevice->physicalDevice =  vulkanDevice->physicalDevice;
+    allocatorInfo. vulkanDevice->logicalDevice =  vulkanDevice->logicalDevice;
     allocatorInfo.instance = instance;
    
     VmaAllocator allocator;
@@ -844,7 +847,7 @@ void te::VulkanRenderManager::createUniformBuffers()
             vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eHostVisible  |
             vk::MemoryPropertyFlagBits::eHostCoherent,
-            uniformBuffers[i], uniformBuffersMemory[i], physicalDevice, device
+            uniformBuffers[i], uniformBuffersMemory[i],  vulkanDevice->physicalDevice,  vulkanDevice->logicalDevice
         );
     }
 }
@@ -863,7 +866,7 @@ void te::VulkanRenderManager::createDescriptorPool()
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = static_cast<uint32_t>(mySwapChain->getChainsCount());
 
-    if (device.createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create descriptor pool!");
     }
 }
@@ -878,7 +881,7 @@ void te::VulkanRenderManager::createDescriptorSets()
     allocInfo.pSetLayouts = layouts.data();
 
     descriptorSets.resize(mySwapChain->getChainsCount());
-    if (device.allocateDescriptorSets(&allocInfo, descriptorSets.data()) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.allocateDescriptorSets(&allocInfo, descriptorSets.data()) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
 
@@ -909,7 +912,7 @@ void te::VulkanRenderManager::createDescriptorSets()
         descriptorWrites[1].descriptorCount = 1;
         descriptorWrites[1].pImageInfo = &imageInfo;
 
-        device.updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+         vulkanDevice->logicalDevice.updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -922,7 +925,7 @@ void te::VulkanRenderManager::createCommandBuffers()
     allocInfo.level = vk::CommandBufferLevel::ePrimary;
     allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-    if (device.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
@@ -983,9 +986,9 @@ void te::VulkanRenderManager::createSyncObjects()
     fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (device.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess ||
-            device.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != vk::Result::eSuccess ||
-            device.createFence(&fenceInfo, nullptr, &inFlightFences[i]) != vk::Result::eSuccess) {
+        if ( vulkanDevice->logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess ||
+             vulkanDevice->logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != vk::Result::eSuccess ||
+             vulkanDevice->logicalDevice.createFence(&fenceInfo, nullptr, &inFlightFences[i]) != vk::Result::eSuccess) {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
@@ -994,7 +997,7 @@ void te::VulkanRenderManager::createSyncObjects()
 void te::VulkanRenderManager::createPipelineCache()
 {
     vk::PipelineCacheCreateInfo pipelineCacheCreateInfo = {}; 
-    device.createPipelineCache(&pipelineCacheCreateInfo, nullptr, &pipelineCache);
+     vulkanDevice->logicalDevice.createPipelineCache(&pipelineCacheCreateInfo, nullptr, &pipelineCache);
 }
 
 void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
@@ -1019,9 +1022,9 @@ void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
 
     void* data;
     
-    device.mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo), {}, &data);
+     vulkanDevice->logicalDevice.mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo), {}, &data);
     memcpy(data, &ubo, sizeof(ubo));
-    device.unmapMemory(uniformBuffersMemory[currentImage]);
+     vulkanDevice->logicalDevice.unmapMemory(uniformBuffersMemory[currentImage]);
 }
 
 
@@ -1059,19 +1062,19 @@ std::vector<const char*> te::VulkanRenderManager::getRequiredExtensions()
     return extensions;
 }
 
-bool te::VulkanRenderManager::isDeviceSuitable(vk::PhysicalDevice device)
+bool te::VulkanRenderManager::isDeviceSuitable(vk::PhysicalDevice physicalDevice)
 {
-    te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies(device, surface);
+    te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies(physicalDevice, surface);
 
-    bool extensionsSupported = checkDeviceExtensionSupport(device);
+    bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice);
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::VulkanHelper::querySwapChainSupport(device, surface);
+        te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::VulkanHelper::querySwapChainSupport(physicalDevice, surface);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
-    vk::PhysicalDeviceFeatures supportedFeatures = device.getFeatures();
+    vk::PhysicalDeviceFeatures supportedFeatures = physicalDevice.getFeatures();
    
     return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
@@ -1082,10 +1085,10 @@ bool te::VulkanRenderManager::isDeviceSuitable(vk::PhysicalDevice device)
 
 
 
-bool te::VulkanRenderManager::checkDeviceExtensionSupport(vk::PhysicalDevice device)
+bool te::VulkanRenderManager::checkDeviceExtensionSupport(vk::PhysicalDevice  physicalDevice)
 {
     
-    std::vector<vk::ExtensionProperties> availableExtensions = device.enumerateDeviceExtensionProperties();
+    std::vector<vk::ExtensionProperties> availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -1144,7 +1147,7 @@ vk::Format te::VulkanRenderManager::findSupportedFormat(const std::vector<vk::Fo
     for (vk::Format format : candidates) {
        
        
-        vk::FormatProperties props = physicalDevice.getFormatProperties(format);
+        vk::FormatProperties props =  vulkanDevice->physicalDevice.getFormatProperties(format);
         if (tiling ==vk::ImageTiling::eLinear  && (props.linearTilingFeatures & features) == features) {
             return format;
         }
@@ -1173,11 +1176,11 @@ void te::VulkanRenderManager::createImage(uint32_t width, uint32_t height, uint3
     imageInfo.samples = vk::SampleCountFlagBits::e1;
     imageInfo.sharingMode = vk::SharingMode::eExclusive;
 
-    if (device.createImage(&imageInfo, nullptr, &image) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createImage(&imageInfo, nullptr, &image) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create image!");
     }
 
-    vk::MemoryRequirements memRequirements = device.getImageMemoryRequirements(image);
+    vk::MemoryRequirements memRequirements =  vulkanDevice->logicalDevice.getImageMemoryRequirements(image);
  
 
     vk::MemoryAllocateInfo allocInfo{};
@@ -1185,10 +1188,10 @@ void te::VulkanRenderManager::createImage(uint32_t width, uint32_t height, uint3
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-    if (device.allocateMemory(&allocInfo, nullptr, &imageMemory) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.allocateMemory(&allocInfo, nullptr, &imageMemory) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to allocate image memory!");
     }
-    device.bindImageMemory(image, imageMemory, 0);
+     vulkanDevice->logicalDevice.bindImageMemory(image, imageMemory, 0);
    
 }
 
@@ -1229,8 +1232,8 @@ void te::VulkanRenderManager::createVertexBuffer(std::vector<te::Vertex> vertice
         vertexBufferMemory,
         instance->commandPool,
         instance->vulkanQueues.graphicsQueue,
-        instance->physicalDevice,
-        instance->device
+        instance-> vulkanDevice->physicalDevice,
+        instance-> vulkanDevice->logicalDevice
     );
 }
 
@@ -1242,8 +1245,8 @@ void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, v
         indexBufferMemory,
         instance->commandPool,
         instance->vulkanQueues.graphicsQueue,
-        instance->physicalDevice,
-        instance->device
+        instance-> vulkanDevice->physicalDevice,
+        instance-> vulkanDevice->logicalDevice
     );
 }
 
@@ -1254,8 +1257,8 @@ void te::VulkanRenderManager::recreateSwapChain()
 {
     window->windowResizing();
 
-    device.waitIdle();
-    //vkDeviceWaitIdle(device);
+     vulkanDevice->logicalDevice.waitIdle();
+    //vkDeviceWaitIdle( vulkanDevice->logicalDevice);
 
     cleanupSwapChain();
 
@@ -1276,42 +1279,42 @@ void te::VulkanRenderManager::recreateSwapChain()
 
 void te::VulkanRenderManager::cleanupSwapChain()
 {
-    device.destroyImageView(depthImageView, nullptr);
+     vulkanDevice->logicalDevice.destroyImageView(depthImageView, nullptr);
    
-    device.destroyImage(depthImage, nullptr);
-    device.freeMemory(depthImageMemory, nullptr);
+     vulkanDevice->logicalDevice.destroyImage(depthImage, nullptr);
+     vulkanDevice->logicalDevice.freeMemory(depthImageMemory, nullptr);
 
 
     mySwapChain->destroyFramebuffers();
 
     /*for (auto framebuffer : swapChainFramebuffers) {
-        device.destroyFramebuffer(framebuffer, nullptr);
+         vulkanDevice->logicalDevice.destroyFramebuffer(framebuffer, nullptr);
     }*/
 
-    device.freeCommandBuffers(commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+     vulkanDevice->logicalDevice.freeCommandBuffers(commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    device.destroyPipeline( graphicsPipeline, nullptr);
-    device.destroyPipelineLayout( pipelineLayout, nullptr);
-    device.destroyRenderPass( renderPass, nullptr);
+     vulkanDevice->logicalDevice.destroyPipeline( graphicsPipeline, nullptr);
+     vulkanDevice->logicalDevice.destroyPipelineLayout( pipelineLayout, nullptr);
+     vulkanDevice->logicalDevice.destroyRenderPass( renderPass, nullptr);
 
 
     mySwapChain->destroySwapchainView();
 
     for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
-        device.destroyBuffer(uniformBuffers[i], nullptr);
-        device.freeMemory(uniformBuffersMemory[i], nullptr);
+         vulkanDevice->logicalDevice.destroyBuffer(uniformBuffers[i], nullptr);
+         vulkanDevice->logicalDevice.freeMemory(uniformBuffersMemory[i], nullptr);
     }
 
-    device.destroyDescriptorPool(descriptorPool, nullptr);
+     vulkanDevice->logicalDevice.destroyDescriptorPool(descriptorPool, nullptr);
 }
 
 void te::VulkanRenderManager::drawFrame()
 {
-    device.waitForFences(1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+     vulkanDevice->logicalDevice.waitForFences(1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
     
     uint32_t imageIndex;
    
-    vk::Result result = device.acquireNextImageKHR(mySwapChain->getSwapchain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
+    vk::Result result =  vulkanDevice->logicalDevice.acquireNextImageKHR(mySwapChain->getSwapchain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
    
     if (result == vk::Result::eErrorOutOfDateKHR) {
         recreateSwapChain();
@@ -1325,7 +1328,7 @@ void te::VulkanRenderManager::drawFrame()
     updateUniformBuffer(imageIndex);
 
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-        device.waitForFences(1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+         vulkanDevice->logicalDevice.waitForFences(1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
 
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
@@ -1345,7 +1348,7 @@ void te::VulkanRenderManager::drawFrame()
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    device.resetFences(1, &inFlightFences[currentFrame]);
+     vulkanDevice->logicalDevice.resetFences(1, &inFlightFences[currentFrame]);
 
     if (vulkanQueues.graphicsQueue.submit(1, &submitInfo, inFlightFences[currentFrame]) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to submit draw command buffer!");

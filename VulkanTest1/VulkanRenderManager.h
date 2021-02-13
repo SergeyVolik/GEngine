@@ -269,7 +269,7 @@ namespace te
         //выделение индесного буфера и получение дискриптора паняти
         void createIndexBuffer(std::vector<uint32_t>, vk::Buffer&, vk::DeviceMemory&);
         
-        void deviceWaitIdle() { device.waitIdle(); }
+        void deviceWaitIdle() { vulkanDevice->logicalDevice.waitIdle(); }
 
       
         void cleanupSwapChain();
