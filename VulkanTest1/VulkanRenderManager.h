@@ -85,17 +85,14 @@ namespace te
     {
     private:
 
+
         //окно на котором будет происходить рендеринг
         te::Window* window;
-
-        //декриптор инстанса библиотеки вулкан
-        vk::Instance vulkanInstance;
-        //физическое устройства GPU (видео карта)
-        vk::PhysicalDevice physicalDevice;
 
         vk::SurfaceKHR surface;
 
         vkGame::SwapChain* mySwapChain;
+        te::vkh::VulkanDevice* vulkanDevice;
 
         vk::PhysicalDeviceProperties deviceProperties;
         // Stores the features available on the selected physical device (for e.g. checking if a feature is available)
@@ -103,10 +100,6 @@ namespace te
         // Stores all available memory (type) properties for the physical device
         vk::PhysicalDeviceMemoryProperties deviceMemoryProperties;
 
-      
-        //логическое устройство созданое на основе физического устройства 
-        // необходино для взаимодествия с драйвером физического устройства
-        vk::Device device;
 
         //дескриптор дебаг мессенджера библиотеки вулкан
         vk::DebugUtilsMessengerEXT debugMessenger;   

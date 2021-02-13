@@ -10,26 +10,28 @@
 //#include "FileReader.h"
 //#include "GameEngine.h"
 //
-//namespace vkh
-//{
-//	class Texture
-//	{
-//	public:
-//		te::vkh::VulkanDevice* device;
-//		vk::Image               image;
-//		vk::ImageLayout         imageLayout;
-//		vk::DeviceMemory        deviceMemory;
-//		vk::ImageView           view;
-//		uint32_t              width, height;
-//		uint32_t              mipLevels;
-//		uint32_t              layerCount;
-//		vk::DescriptorImageInfo descriptor;
-//		vk::Sampler             sampler;
-//
-//		void      updateDescriptor();
-//		void      destroy();
-//		ktxResult loadKTXFile(std::string filename, ktxTexture** target);
-//	};
+#include "VulkanHelper.h"
+namespace vkh
+{
+	class Texture
+	{
+	public:
+		te::vkh::VulkanDevice device;
+		vk::Image               image;
+		vk::ImageLayout         imageLayout;
+		vk::DeviceMemory        deviceMemory;
+		vk::ImageView           view;
+		uint32_t              width, height;
+		uint32_t              mipLevels;
+		uint32_t              layerCount;
+		vk::DescriptorImageInfo descriptor;
+		vk::Sampler             sampler;
+
+		void      updateDescriptor();
+		void      destroy();
+		bool loadFromFIle(std::string filename);
+	};
+}
 //
 //	class Texture2D : public Texture
 //	{

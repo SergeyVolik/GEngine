@@ -47,6 +47,7 @@ void te::VulkanRenderManager::createInstance()
         createInfo.pNext = nullptr;
     }
 
+    vulkanDevice = new 
     if (vk::createInstance(&createInfo, nullptr, &vulkanInstance) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create instance!");
     }
@@ -131,7 +132,7 @@ void te::VulkanRenderManager::createLogicalDevice()
 
 void te::VulkanRenderManager::createSwapchain()
 {
-    mySwapChain = new vkGame::SwapChain(surface, te::vkh::VukanDevice(device, physicalDevice, vulkanInstance));
+    mySwapChain = new vkGame::SwapChain(surface, te::vkh::VulkanDevice(device, physicalDevice, vulkanInstance));
     int width, height;
     window->getFramebufferSize(&width, &height);
     mySwapChain->createSwapChain(width, height);
@@ -157,8 +158,6 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
 
    
     instance->createSwapchain();
-    //creating swap chain
-    
 
     instance->createRenderPass();
     instance->createDescriptorSetLayout();
@@ -230,7 +229,7 @@ void te::VulkanRenderManager::terminate()
     }
    
     delete instance->mySwapChain;
-    instance->vulkanInstance.destroySurfaceKHR(instance->surface, nullptr);
+    
     instance->vulkanInstance.destroy();
 
     delete instance;
@@ -544,27 +543,7 @@ void te::VulkanRenderManager::createDepthResources()
 void te::VulkanRenderManager::createFramebuffers()
 {
     mySwapChain->createFramebuffers(depthImageView, renderPass);
-    /*swapChainFramebuffers.resize(swapChainImageViews.size());
-
-    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-        std::array<vk::ImageView, 2> attachments = {
-            swapChainImageViews[i],
-            depthImageView
-        };
-
-        vk::FramebufferCreateInfo framebufferInfo{};
-       
-        framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
-        framebufferInfo.layers = 1;
-
-        if (device.createFramebuffer(&framebufferInfo, nullptr, &swapChainFramebuffers[i]) != vk::Result::eSuccess) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
-    }*/
+    
 }
 
 #pragma region Load texture to gpu
@@ -1317,17 +1296,6 @@ void te::VulkanRenderManager::cleanupSwapChain()
 
 
     mySwapChain->destroySwapchainView();
-
-   /* for (auto imageView : swapChainImageViews) {
-        device.destroyImageView(imageView, nullptr);
-    }
-
-    device.destroySwapchainKHR(swapChain, nullptr);
-
-    for (size_t i = 0; i < swapChainImages.size(); i++) {
-        device.destroyBuffer(uniformBuffers[i], nullptr);
-        device.freeMemory(uniformBuffersMemory[i], nullptr);
-    }*/
 
     for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
         device.destroyBuffer(uniformBuffers[i], nullptr);

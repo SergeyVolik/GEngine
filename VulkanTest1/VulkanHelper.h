@@ -17,18 +17,19 @@ namespace te
 			std::vector<vk::PresentModeKHR> presentModes;
 		};
 
-		struct VukanDevice
+		class VulkanDevice
 		{
 			vk::Device logicalDevice;
 			vk::PhysicalDevice physicalDevice;
 			vk::Instance instance;
 
-			VukanDevice(vk::Device logicalDevice,
+			VulkanDevice(vk::Device logicalDevice,
 				vk::PhysicalDevice physicalDevice,
 				vk::Instance instance) : logicalDevice(logicalDevice), physicalDevice(physicalDevice), instance(instance)
 			{
 
 			}
+			VulkanDevice() : logicalDevice(), physicalDevice(), instance() {}
 		};
 
 		struct QueueFamilyIndices {
@@ -135,11 +136,23 @@ namespace te
 				vk::Device device
 			);
 
-			static vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, vk::Device device);
+			static vk::ImageView createImageView(
+				vk::Image image,
+				vk::Format format,
+				vk::ImageAspectFlags aspectFlags,
+				uint32_t mipLevels,
+				vk::Device device
+			);
 
-			static QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+			static QueueFamilyIndices findQueueFamilies(
+				vk::PhysicalDevice device,
+				vk::SurfaceKHR surface
+			);
 
-			static te::vkh::SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
+			static te::vkh::SwapChainSupportDetails querySwapChainSupport(
+				vk::PhysicalDevice physicalDevice,
+				vk::SurfaceKHR surface
+			);
 			
 
 			

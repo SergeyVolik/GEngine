@@ -16,7 +16,7 @@ namespace vkGame {
 
 	class SwapChain
 	{
-        te::vkh::VukanDevice device;
+        te::vkh::VulkanDevice* device;
         //поверхность для выводна на екран
       
         vk::SurfaceKHR surface;
@@ -50,7 +50,7 @@ namespace vkGame {
             swapChainImageViews.resize(swapChainImages.size());
 
             for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-                swapChainImageViews[i] = te::vkh::VulkanHelper::createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor, 1, device.logicalDevice);
+                swapChainImageViews[i] = te::vkh::VulkanHelper::createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor, 1, device->logicalDevice);
             }
         }
 
@@ -97,14 +97,14 @@ namespace vkGame {
             }
         }
     public:
-        SwapChain(vk::SurfaceKHR surface, te::vkh::VukanDevice device) : surface(surface), device(device), width(0), height(0), details({})
+        SwapChain(vk::SurfaceKHR surface, te::vkh::VulkanDevice* device) : surface(surface), device(device), width(0), height(0), details({})
         {
 
         }
 
         ~SwapChain()
         {
-       
+           device->instance.destroySurfaceKHR(surface, nullptr);
         }
 
         void createSwapChain(int newWidth, int newHeight)
@@ -113,7 +113,7 @@ namespace vkGame {
             width = newWidth;
             height = newHeight;
 
-            te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::VulkanHelper::querySwapChainSupport(device.physicalDevice, surface);
+            te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::VulkanHelper::querySwapChainSupport(device->physicalDevice, surface);
 
             //querySwapChainSupport(physicalDevice)
             vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -136,7 +136,7 @@ namespace vkGame {
             createInfo.imageArrayLayers = 1;
             createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
-            te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies(device.physicalDevice, surface);
+            te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies(device->physicalDevice, surface);
             uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
             if (indices.graphicsFamily != indices.presentFamily) {
@@ -153,11 +153,11 @@ namespace vkGame {
             createInfo.presentMode = presentMode;
             createInfo.clipped = VK_TRUE;
 
-            if (device.logicalDevice.createSwapchainKHR(&createInfo, nullptr, &swapChain) != vk::Result::eSuccess) {
+            if (device->logicalDevice.createSwapchainKHR(&createInfo, nullptr, &swapChain) != vk::Result::eSuccess) {
                 throw std::runtime_error("failed to create swap chain!");
             }
 
-            swapChainImages = device.logicalDevice.getSwapchainImagesKHR(swapChain);
+            swapChainImages = device->logicalDevice.getSwapchainImagesKHR(swapChain);
 
             swapChainImageFormat = surfaceFormat.format;
             swapChainExtent = extent;
@@ -167,10 +167,10 @@ namespace vkGame {
         void destroySwapchainView()
         {
             for (auto imageView : swapChainImageViews) {
-                device.logicalDevice.destroyImageView(imageView, nullptr);
+                device->logicalDevice.destroyImageView(imageView, nullptr);
             }
 
-            device.logicalDevice.destroySwapchainKHR(swapChain, nullptr);
+            device->logicalDevice.destroySwapchainKHR(swapChain, nullptr);
         }
         int getChainsCount()
         {
@@ -191,7 +191,7 @@ namespace vkGame {
         void destroyFramebuffers()
         {
             for (auto framebuffer : swapChainFramebuffers) {
-                device.logicalDevice.destroyFramebuffer(framebuffer, nullptr);
+                device->logicalDevice.destroyFramebuffer(framebuffer, nullptr);
             }
         }
     
@@ -225,7 +225,7 @@ namespace vkGame {
                 framebufferInfo.height = swapChainExtent.height;
                 framebufferInfo.layers = 1;
 
-                if (device.logicalDevice.createFramebuffer(&framebufferInfo, nullptr, &swapChainFramebuffers[i]) != vk::Result::eSuccess) {
+                if (device->logicalDevice.createFramebuffer(&framebufferInfo, nullptr, &swapChainFramebuffers[i]) != vk::Result::eSuccess) {
                     throw std::runtime_error("failed to create framebuffer!");
                 }
             }

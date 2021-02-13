@@ -6,40 +6,35 @@
 //* This code is licensed under the MIT license(MIT) (http://opensource.org/licenses/MIT)
 //*/
 //
-//#include "VulkanTexture.h"
-//#include "VulkanValidate.h"
-//#include "VulkanHelper.h"
-//namespace vkh
-//{
-//	void Texture::updateDescriptor()
-//	{
-//		descriptor.sampler = sampler;
-//		descriptor.imageView = view;
-//		descriptor.imageLayout = imageLayout;
-//	}
-//
-//	void Texture::destroy()
-//	{
-//		vkDestroyImageView(device->logicalDevice, view, nullptr);
-//		vkDestroyImage(device->logicalDevice, image, nullptr);
-//		if (sampler)
-//		{
-//			vkDestroySampler(device->logicalDevice, sampler, nullptr);
-//		}
-//		vkFreeMemory(device->logicalDevice, deviceMemory, nullptr);
-//	}
-//
-//	ktxResult Texture::loadKTXFile(std::string filename, ktxTexture** target)
-//	{
-//		ktxResult result = KTX_SUCCESS;
-//
-//		if (te::FileReader::fileExists(filename.c_str())) {
-//			te::GEngine::exitFatal("Could not load texture from " + filename + "\n\nThe file may be part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
-//		}
-//		result = ktxTexture_CreateFromNamedFile(filename.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, target);
-//	
-//		return result;
-//	}
+#include "VulkanTexture.h"
+#include "VulkanValidate.h"
+#include "VulkanHelper.h"
+namespace vkh
+{
+	void Texture::updateDescriptor()
+	{
+		descriptor.sampler = sampler;
+		descriptor.imageView = view;
+		descriptor.imageLayout = imageLayout;
+	}
+
+	void Texture::destroy()
+	{
+		vkDestroyImageView(device.logicalDevice, view, nullptr);
+		vkDestroyImage(device.logicalDevice, image, nullptr);
+		if (sampler)
+		{
+			vkDestroySampler(device.logicalDevice, sampler, nullptr);
+		}
+		vkFreeMemory(device.logicalDevice, deviceMemory, nullptr);
+	}
+
+	bool Texture::loadFromFIle(std::string filename)
+	{
+		
+	
+		return true;
+	}
 //
 //	/**
 //	* Load a 2D texture including all mip levels
@@ -881,4 +876,4 @@
 //		updateDescriptor();
 //	}
 //
-//}
+}

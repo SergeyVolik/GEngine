@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8043561b-c43f-4e38-b955-8e1caf093b3e}</ProjectGuid>
-    <RootNamespace>VulkanTest1</RootNamespace>
+    <ProjectGuid>{8266fd13-9ef5-44b2-a472-48b6c7327e76}</ProjectGuid>
+    <RootNamespace>CPP2020MODULESTEST</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -88,14 +88,10 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master\glm;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.162.0\Lib;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -106,16 +102,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master\glm;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.162.0\Lib;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -124,14 +116,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;C:\Users\user\Documents\Visual Studio 2019\Libraries\stb-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\tinyobjloader-master;D:\Study\GEngine\vma;D:\Study\GEngine\external\ktx\include;D:\Study\GEngine\external\ktx\other_include;C:\Users\user\Desktop\vulkan-examples-cpp\Vulkan\external\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.162.0\Lib;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,86 +132,19 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\user\Documents\Visual Studio 2019\Libraries\glm-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\include;C:\VulkanSDK\1.2.162.0\Include;C:\Users\user\Documents\Visual Studio 2019\Libraries\stb-master;C:\Users\user\Documents\Visual Studio 2019\Libraries\tinyobjloader-master;D:\Study\GEngine\vma;D:\Study\GEngine\external\ktx\include;D:\Study\GEngine\external\ktx\other_include;C:\Users\user\Desktop\vulkan-examples-cpp\Vulkan\external\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.162.0\Lib;C:\Users\user\Documents\Visual Studio 2019\Libraries\glfw\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;vulkan-1.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\external\imgui\imgui.cpp" />
-    <ClCompile Include="..\external\imgui\imgui_demo.cpp" />
-    <ClCompile Include="..\external\imgui\imgui_draw.cpp" />
-    <ClCompile Include="..\external\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="..\external\ktx\lib\checkheader.c" />
-    <ClCompile Include="..\external\ktx\lib\filestream.c" />
-    <ClCompile Include="..\external\ktx\lib\hashlist.c" />
-    <ClCompile Include="..\external\ktx\lib\memstream.c" />
-    <ClCompile Include="..\external\ktx\lib\swap.c" />
-    <ClCompile Include="..\external\ktx\lib\texture.c" />
-    <ClCompile Include="AssetsLoader.cpp" />
-    <ClCompile Include="VulkanBuffer.cpp" />
-    <ClCompile Include="Entity.cpp" />
-    <ClCompile Include="FileReader.cpp" />
-    <ClCompile Include="GameEngine.cpp" />
-    <ClCompile Include="InputManager.cpp" />
-    <ClCompile Include="LoggerManager.cpp" />
+    <ClCompile Include="Foo.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="SceneManager.cpp" />
-    <ClCompile Include="Scene.h" />
-    <ClCompile Include="SceneManager.h" />
-    <ClCompile Include="Time.cpp" />
-    <ClCompile Include="UIOverlay.cpp" />
-    <ClCompile Include="VulkanDevice.cpp" />
-    <ClCompile Include="VulkanHelper.cpp" />
-    <ClCompile Include="VulkanRenderManager.cpp" />
-    <ClCompile Include="VulkanTexture.cpp" />
-    <ClCompile Include="VulkanValidate.cpp" />
-    <ClCompile Include="VulkanValidate.h" />
-    <ClCompile Include="Window.cpp" />
-    <ClCompile Include="WindowManager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="AssetsLoader.h" />
-    <ClInclude Include="SwapChain.h" />
-    <ClInclude Include="VulkanBuffer.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Component.h" />
-    <ClInclude Include="EngineSystem.h" />
-    <ClInclude Include="Entity.h" />
-    <ClInclude Include="FileReader.h" />
-    <ClInclude Include="GameEngine.h" />
-    <ClInclude Include="InputManager.h" />
-    <ClInclude Include="LoggerManager.h" />
-    <ClInclude Include="Material.h" />
-    <ClInclude Include="Mesh.h" />
-    <ClInclude Include="Renderer.h" />
-    <ClInclude Include="SimplerModelTransformations.h" />
-    <ClInclude Include="Singleton.h" />
-    <ClInclude Include="VulkanFrameBuffer.h" />
-    <ClInclude Include="VulkanTexture.h" />
-    <ClInclude Include="Time.h" />
-    <ClInclude Include="Transform.h" />
-    <ClInclude Include="UIOverlay.h" />
-    <ClInclude Include="Vertex.h" />
-    <ClInclude Include="VulkanDevice.h" />
-    <ClInclude Include="VulkanHelper.h" />
-    <ClInclude Include="VulkanRenderManager.h" />
-    <ClInclude Include="VulkanTools.h" />
-    <ClInclude Include="Window.h" />
-    <ClInclude Include="WindowManager.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
