@@ -119,7 +119,7 @@ namespace te
         //-----------------------------------------------------графика----------------------------------------------
        
        
-        vk::RenderPass renderPass;
+        //vk::RenderPass renderPass;
         vk::DescriptorSetLayout descriptorSetLayout;
         vk::PipelineLayout pipelineLayout;
         vk::Pipeline graphicsPipeline;
@@ -140,9 +140,9 @@ namespace te
 
         //презентационная очередь для отображения на поверхность  SurfaceKHR
      
-        vk::Image depthImage;
+       /* vk::Image depthImage;
         vk::DeviceMemory depthImageMemory;
-        vk::ImageView depthImageView;
+        vk::ImageView depthImageView;*/
 
         uint32_t mipLevels;
         vk::Image textureImage;
@@ -194,10 +194,6 @@ namespace te
 
         //создание логического устройсива вулка для взаимодействия с драйвером устройства
         void createLogicalDevice();
-
-
-        //настройка структуры для прохода рендеринга (настройка цвета, глубины изображения)
-        void createRenderPass();
 
         //создание привязки данных к шейдерам (vertex, fragment)
         void createDescriptorSetLayout();

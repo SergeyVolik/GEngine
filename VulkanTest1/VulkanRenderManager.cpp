@@ -5,6 +5,7 @@
 #include "VulkanHelper.h"
 #include "AssetsLoader.h"
 #include "Mesh.h"
+#include "SwapChain.h"
 //#include <vk_mem_alloc.h>
 #include <array>
 #pragma region vulkan instancing
@@ -159,14 +160,16 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
 
    
     instance->createSwapchain();
+    instance->createFramebuffers();
 
-    instance->createRenderPass();
     instance->createDescriptorSetLayout();
     instance->createPipelineCache();
     instance->createGraphicsPipeline();
     instance->createCommandPool();
     instance->createDepthResources();
-    instance->createFramebuffers();
+
+   
+
     instance->createTextureImage(instance->textureImage, instance->mipLevels);
     instance->createTextureImageView(instance->textureImageView, instance->textureImage, instance->mipLevels);
     instance->createTextureSampler();
@@ -265,70 +268,6 @@ void te::VulkanRenderManager::createSurface()
 
 #pragma endregion
 
-
-#pragma region render pipeline
-
-#pragma endregion
-
-
-void te::VulkanRenderManager::createRenderPass()
-{
-    vk::AttachmentDescription colorAttachment{};
-    colorAttachment.format = mySwapChain->getImageFormat() /*swapChainImageFormat*/;
-    colorAttachment.samples = vk::SampleCountFlagBits::e1;
-    colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-    colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-    colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-    colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-    colorAttachment.initialLayout = vk::ImageLayout::eUndefined; 
-    colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-
-    vk::AttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat();
-    depthAttachment.samples = vk::SampleCountFlagBits::e1;
-    depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-    depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
-    depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-    depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-    depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
-    depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-    vk::AttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
-
-    vk::AttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-    vk::SubpassDescription subpass{};
-    subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-    vk::SubpassDependency dependency{};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests; 
-    dependency.srcAccessMask = {};
-    dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
-    dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-
-    std::array<vk::AttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
-    vk::RenderPassCreateInfo renderPassInfo{};
-  
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if ( vulkanDevice->logicalDevice.createRenderPass(&renderPassInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to create render pass!");
-    }
-}
 
 void te::VulkanRenderManager::createDescriptorSetLayout()
 {
@@ -498,7 +437,7 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = mySwapChain->getRenderPass();
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = nullptr;
 
@@ -526,7 +465,7 @@ void te::VulkanRenderManager::createCommandPool()
 
 void te::VulkanRenderManager::createDepthResources()
 {
-    vk::Format depthFormat = findDepthFormat();
+    /*vk::Format depthFormat = findDepthFormat();
 
     auto swapChainExtent = mySwapChain->getExtent();
 
@@ -541,12 +480,62 @@ void te::VulkanRenderManager::createDepthResources()
 
     depthImageView = te::vkh::VulkanHelper::createImageView(
         depthImage, depthFormat,
-        vk::ImageAspectFlagBits::eDepth, 1,  vulkanDevice->logicalDevice);
+        vk::ImageAspectFlagBits::eDepth, 1, vulkanDevice->logicalDevice);*/
 }
 
 void te::VulkanRenderManager::createFramebuffers()
 {
-    mySwapChain->createFramebuffers(depthImageView, renderPass);
+    // Four attachments (3 color, 1 depth)
+    vkGame::AttachmentCreateInfo attachmentInfo{};
+  
+    auto swapChainExtent = mySwapChain->getExtent();
+    
+    attachmentInfo.width = swapChainExtent.width;
+    attachmentInfo.height = swapChainExtent.height;
+    attachmentInfo.layerCount = 1;  
+       
+    mySwapChain->initFrameBuffers();
+
+    for (int i = 0; i < mySwapChain->getChainsCount(); i++)
+    {
+        //attachmentInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
+        //// Color attachments
+        //// Attachment 0: (World space) Positions
+        //attachmentInfo.format = vk::Format::eR16G16B16A16Sfloat;
+        //mySwapChain->swapChainFramebuffers[i]->addAttachment(attachmentInfo);
+
+        //// Attachment 1: (World space) Normals
+        //attachmentInfo.format = vk::Format::eR16G16B16A16Sfloat;
+        //mySwapChain->swapChainFramebuffers[i]->addAttachment(attachmentInfo);
+
+        //// Attachment 2: Albedo (color)
+        //attachmentInfo.format = vk::Format::eR8G8B8A8Unorm;
+        //mySwapChain->swapChainFramebuffers[i]->addAttachment(attachmentInfo);
+
+        // Depth attachment
+        // Find a suitable depth format
+
+        attachmentInfo.format = findDepthFormat();
+        attachmentInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+        attachmentInfo.uniqueAttachment = true;
+
+        if (i == 0)
+        {
+            mySwapChain->swapChainFramebuffers[i]->addAttachment(attachmentInfo);
+            mySwapChain->swapChainFramebuffers[i]->createSampler(vk::Filter::eNearest, vk::Filter::eNearest, vk::SamplerAddressMode::eClampToEdge);
+            mySwapChain->swapChainFramebuffers[i]->createRenderPass(mySwapChain->getImageFormat());
+        }
+        else {
+            mySwapChain->swapChainFramebuffers[i]->attachments.push_back(mySwapChain->swapChainFramebuffers[0]->attachments[0]);
+            mySwapChain->swapChainFramebuffers[i]->sampler = mySwapChain->swapChainFramebuffers[0]->sampler;
+            mySwapChain->swapChainFramebuffers[i]->renderPass = mySwapChain->swapChainFramebuffers[0]->renderPass;
+        }
+
+
+    }
+
+    
+    mySwapChain->createFramebuffers();
     
 }
 
@@ -938,7 +927,7 @@ void te::VulkanRenderManager::createCommandBuffers()
         }
 
         vk::RenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.renderPass = mySwapChain->getRenderPass();
         renderPassInfo.framebuffer = mySwapChain->getFrameBufferByIndex(i);
         renderPassInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
         renderPassInfo.renderArea.extent = mySwapChain->getExtent();
@@ -1266,12 +1255,13 @@ void te::VulkanRenderManager::recreateSwapChain()
     int width, height;
     window->getFramebufferSize(&width, &height);
     mySwapChain->createSwapChain(width, height);
+    createFramebuffers();
     //createSwapChain();
     //createSwapChainImageViews();
-    createRenderPass();
+
     createGraphicsPipeline();
     createDepthResources();
-    createFramebuffers();
+    //createFramebuffers();
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -1281,21 +1271,26 @@ void te::VulkanRenderManager::recreateSwapChain()
 void te::VulkanRenderManager::cleanupSwapChain()
 {
      //delete depth representetion
-     vulkanDevice->logicalDevice.destroyImageView(depthImageView, nullptr); 
-     vulkanDevice->logicalDevice.destroyImage(depthImage, nullptr);
-     vulkanDevice->logicalDevice.freeMemory(depthImageMemory, nullptr);
+     //vulkanDevice->logicalDevice.destroyImageView(depthImageView, nullptr); 
+     //vulkanDevice->logicalDevice.destroyImage(depthImage, nullptr);
+     //vulkanDevice->logicalDevice.freeMemory(depthImageMemory, nullptr);
 
 
-    mySwapChain->destroyFramebuffers();
+    
 
      vulkanDevice->logicalDevice.freeCommandBuffers(commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
+     mySwapChain->destroyFramebuffers();
+
      vulkanDevice->logicalDevice.destroyPipeline( graphicsPipeline, nullptr);
      vulkanDevice->logicalDevice.destroyPipelineLayout( pipelineLayout, nullptr);
-     vulkanDevice->logicalDevice.destroyRenderPass( renderPass, nullptr);
 
+   
 
-    mySwapChain->destroySwapchainView();
+     //vulkanDevice->logicalDevice.destroyRenderPass( renderPass, nullptr);
+
+    
+    mySwapChain->destroySwapchain();
 
     for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
          vulkanDevice->logicalDevice.destroyBuffer(uniformBuffers[i], nullptr);

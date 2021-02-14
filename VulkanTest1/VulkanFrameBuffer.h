@@ -10,6 +10,8 @@ namespace vkGame
 {
 	struct FramebufferAttachment
 	{
+		bool uniqueAttachment;
+
 		vk::Image image;
 		vk::DeviceMemory memory;
 		vk::ImageView view;
@@ -65,6 +67,7 @@ namespace vkGame
 	*/
 	struct AttachmentCreateInfo
 	{
+		bool uniqueAttachment;
 		uint32_t width, height;
 		uint32_t layerCount;
 		vk::Format format;
@@ -86,6 +89,7 @@ namespace vkGame
 		vk::Framebuffer framebuffer;
 		vk::RenderPass renderPass;
 		vk::Sampler sampler;
+
 		std::vector<FramebufferAttachment> attachments;
 
 		/**
@@ -101,16 +105,44 @@ namespace vkGame
 
 		~VulkanFrameBuffer()
 		{
+
+
+			for (int i = 0; i < attachments.size(); i++)
+			{   
+				if (!attachments[i].uniqueAttachment)
+				{
+					
+					vulkanDevice->logicalDevice.destroyImage(attachments[i].image);					
+					vulkanDevice->logicalDevice.destroyImageView(attachments[i].view);				
+					vulkanDevice->logicalDevice.freeMemory(attachments[i].memory);
+				}
+
+			}
+			
+
 			vulkanDevice->logicalDevice.destroyFramebuffer(framebuffer, nullptr);
 		}
 
-		void createFramebuffer(std::vector<vk::ImageView> attachments, vk::RenderPass renderPass)
+		void createFramebuffer(vk::ImageView swapChainImageView)
 		{
 			vk::FramebufferCreateInfo framebufferInfo{};
 
 			framebufferInfo.renderPass = renderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size() + 1);
+
+			std::vector<vk::ImageView> attachmentsView;
+
+
+			attachmentsView.push_back(swapChainImageView);
+
+			for (int i = 0; i < attachments.size(); i++)
+			{
+				attachmentsView.push_back(attachments[i].view);
+			}
+
+			
+
+			framebufferInfo.pAttachments = attachmentsView.data();
 			framebufferInfo.width = width;
 			framebufferInfo.height = height;
 			framebufferInfo.layers = 1;
@@ -132,7 +164,7 @@ namespace vkGame
 			FramebufferAttachment attachment;
 
 			attachment.format = createinfo.format;
-
+			attachment.uniqueAttachment = createinfo.uniqueAttachment;
 			vk::ImageAspectFlags aspectMask{};
 
 			// Select aspect mask and layout depending on usage
@@ -253,6 +285,77 @@ namespace vkGame
 			samplerInfo.maxLod = 1.0f;
 			samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;;
 			return vulkanDevice->logicalDevice.createSampler(&samplerInfo, nullptr, &sampler);
+		}
+
+		void createRenderPass(vk::Format swapchainImageFormat)
+		{
+			vk::AttachmentDescription colorAttachment{};
+			colorAttachment.format = swapchainImageFormat /*swapChainImageFormat*/;
+			colorAttachment.samples = vk::SampleCountFlagBits::e1;
+			colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+			colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+			colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+			colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+			colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+			colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+		
+
+			//vk::AttachmentDescription depthAttachment{};
+			//depthAttachment.format = findDepthFormat();
+			//depthAttachment.samples = vk::SampleCountFlagBits::e1;
+			//depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+			//depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+			//depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+			//depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+			//depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
+			//depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+			std::vector<vk::AttachmentDescription> attachmentsDescriptions = { colorAttachment };
+
+			for (auto& attachment : attachments)
+			{
+				attachmentsDescriptions.push_back(attachment.description);
+			};
+
+			
+
+			vk::AttachmentReference colorAttachmentRef{};
+
+			colorAttachmentRef.attachment = 0;
+			colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+			vk::AttachmentReference depthAttachmentRef{};
+			depthAttachmentRef.attachment = 1;
+			depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+
+			vk::SubpassDescription subpass{};
+			subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+			subpass.colorAttachmentCount = 1;
+			subpass.pColorAttachments = &colorAttachmentRef;
+			subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+			vk::SubpassDependency dependency{};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+			dependency.srcAccessMask = {};
+			dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+			dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+			
+			vk::RenderPassCreateInfo renderPassInfo{};
+
+			renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentsDescriptions.size());
+			renderPassInfo.pAttachments = attachmentsDescriptions.data();
+			renderPassInfo.subpassCount = 1;
+			renderPassInfo.pSubpasses = &subpass;
+			renderPassInfo.dependencyCount = 1;
+			renderPassInfo.pDependencies = &dependency;
+
+			if (vulkanDevice->logicalDevice.createRenderPass(&renderPassInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
+				throw std::runtime_error("failed to create render pass!");
+			}
 		}
 
 	};
