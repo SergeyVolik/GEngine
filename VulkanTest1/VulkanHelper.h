@@ -19,6 +19,16 @@ namespace te
 
 		class VulkanDevice
 		{
+			vk::PhysicalDeviceProperties properties;
+			/** @brief Features of the physical device that an application can use to check if a feature is supported */
+			vk::PhysicalDeviceFeatures features;
+			/** @brief Features that have been enabled for use on the physical device */
+			vk::PhysicalDeviceFeatures enabledFeatures;
+			/** @brief Memory types and heaps of the physical device */
+			vk::PhysicalDeviceMemoryProperties memoryProperties;
+
+			/** @brief List of extensions supported by the device */
+			std::vector<std::string> supportedExtensions;
 		public:
 			vk::Device logicalDevice;
 			vk::PhysicalDevice physicalDevice;
@@ -28,9 +38,54 @@ namespace te
 				vk::PhysicalDevice physicalDevice,
 				vk::Instance instance) : logicalDevice(logicalDevice), physicalDevice(physicalDevice), instance(instance)
 			{
+				// Store Properties features, limits and properties of the physical device for later use
+		        // Device properties also contain limits and sparse properties
+				physicalDevice.getProperties(&properties);
+				// Features should be checked by the examples before using them
+				physicalDevice.getFeatures(&features);
+				// Memory properties are used regularly for creating all kinds of buffers
+			
+				physicalDevice.getMemoryProperties(&memoryProperties);
 
+				uint32_t extCount = 0;
+
+				 auto extentions = physicalDevice.enumerateDeviceExtensionProperties();
+
+				 for (auto const ext : extentions)
+					 supportedExtensions.push_back(ext.extensionName);
+				
 			}
 			VulkanDevice() : logicalDevice(), physicalDevice(), instance() {}
+
+
+			uint32_t getMemoryType(uint32_t typeBits, vk::MemoryPropertyFlags properties, vk::Bool32* memTypeFound) const
+			{
+				for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
+				{
+					if ((typeBits & 1) == 1)
+					{
+						if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+						{
+							if (memTypeFound)
+							{
+								*memTypeFound = true;
+							}
+							return i;
+						}
+					}
+					typeBits >>= 1;
+				}
+
+				if (memTypeFound)
+				{
+					*memTypeFound = false;
+					return 0;
+				}
+				else
+				{
+					throw std::runtime_error("Could not find a matching memory type");
+				}
+			}
 		};
 
 		struct QueueFamilyIndices {

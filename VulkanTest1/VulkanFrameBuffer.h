@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "VulkanHelper.h"
 #include <assert.h>
+#include "VulkanValidate.h"
 namespace vkGame
 {
 	struct FramebufferAttachment
@@ -118,6 +119,112 @@ namespace vkGame
 				throw std::runtime_error("failed to create framebuffer!");
 			}
 			
+		}
+		/**
+		* Add a new attachment described by createinfo to the framebuffer's attachment list
+		*
+		* @param createinfo Structure that specifies the framebuffer to be constructed
+		*
+		* @return Index of the new attachment
+		*/
+		uint32_t addAttachment(AttachmentCreateInfo createinfo)
+		{
+			FramebufferAttachment attachment;
+
+			attachment.format = createinfo.format;
+
+			vk::ImageAspectFlags aspectMask{};
+
+			// Select aspect mask and layout depending on usage
+
+			// Color attachment
+			if (createinfo.usage & vk::ImageUsageFlagBits::eColorAttachment)
+			{
+				aspectMask = vk::ImageAspectFlagBits::eColor;
+			}
+
+			// Depth (and/or stencil) attachment
+			if (createinfo.usage & vk::ImageUsageFlagBits::eDepthStencilAttachment)
+			{
+				if (attachment.hasDepth())
+				{
+					aspectMask = vk::ImageAspectFlagBits::eDepth;
+				}
+				if (attachment.hasStencil())
+				{
+					aspectMask = aspectMask | vk::ImageAspectFlagBits::eStencil;
+				}
+			}
+
+			assert(aspectMask > static_cast<vk::ImageAspectFlagBits>(0));
+
+			vk::ImageCreateInfo image{};
+			image.imageType = vk::ImageType::e2D;
+			image.format = createinfo.format;
+			image.extent.width = createinfo.width;
+			image.extent.height = createinfo.height;
+			image.extent.depth = 1;
+			image.mipLevels = 1;
+			image.arrayLayers = createinfo.layerCount;
+			image.samples = createinfo.imageSampleCount;
+			image.tiling = vk::ImageTiling::eOptimal;
+			image.usage = createinfo.usage;
+
+			vk::MemoryAllocateInfo memAlloc{ };
+			vk::MemoryRequirements memReqs;
+
+			// Create image for this attachment
+			VK_CHECK_RESULT(vulkanDevice->logicalDevice.createImage(&image, nullptr, &attachment.image));
+		
+			vulkanDevice->logicalDevice.getImageMemoryRequirements(attachment.image, &memReqs);
+
+			memAlloc.allocationSize = memReqs.size;
+
+			vk::Bool32 result = false;
+			memAlloc.memoryTypeIndex = vulkanDevice->getMemoryType(memReqs.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal, &result);
+
+			VK_CHECK_RESULT(vulkanDevice->logicalDevice.allocateMemory(&memAlloc, nullptr, &attachment.memory));
+			
+			vulkanDevice->logicalDevice.bindImageMemory(attachment.image, attachment.memory, 0);
+
+			attachment.subresourceRange = vk::ImageSubresourceRange();
+			attachment.subresourceRange.aspectMask = aspectMask;
+			attachment.subresourceRange.levelCount = 1;
+			attachment.subresourceRange.layerCount = createinfo.layerCount;
+
+			vk::ImageViewCreateInfo imageView{};
+			imageView.viewType = (createinfo.layerCount == 1) ? vk::ImageViewType::e2D  : vk::ImageViewType::e2DArray;
+			imageView.format = createinfo.format;
+			imageView.subresourceRange = attachment.subresourceRange;
+			//todo: workaround for depth+stencil attachments
+			imageView.subresourceRange.aspectMask = (attachment.hasDepth()) ? vk::ImageAspectFlagBits::eDepth : aspectMask;
+			imageView.image = attachment.image;
+			VK_CHECK_RESULT(vulkanDevice->logicalDevice.createImageView(&imageView, nullptr, &attachment.view));
+
+			// Fill attachment description
+			attachment.description = vk::AttachmentDescription();
+			attachment.description.samples = createinfo.imageSampleCount;
+			attachment.description.loadOp = vk::AttachmentLoadOp::eClear;
+			attachment.description.storeOp = (createinfo.usage & vk::ImageUsageFlagBits::eSampled) ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
+			attachment.description.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+			attachment.description.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+			attachment.description.format = createinfo.format;
+			attachment.description.initialLayout = vk::ImageLayout::eUndefined;
+			// Final layout
+			// If not, final layout depends on attachment type
+			if (attachment.hasDepth() || attachment.hasStencil())
+			{
+				attachment.description.finalLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+			}
+			else
+			{
+				attachment.description.finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			}
+
+			attachments.push_back(attachment);
+
+			return static_cast<uint32_t>(attachments.size() - 1);
+
 		}
 
 		/**

@@ -538,6 +538,7 @@ void te::VulkanRenderManager::createDepthResources()
         vk::MemoryPropertyFlagBits::eDeviceLocal,
         depthImage, depthImageMemory
     );
+
     depthImageView = te::vkh::VulkanHelper::createImageView(
         depthImage, depthFormat,
         vk::ImageAspectFlagBits::eDepth, 1,  vulkanDevice->logicalDevice);
@@ -1279,8 +1280,8 @@ void te::VulkanRenderManager::recreateSwapChain()
 
 void te::VulkanRenderManager::cleanupSwapChain()
 {
-     vulkanDevice->logicalDevice.destroyImageView(depthImageView, nullptr);
-   
+     //delete depth representetion
+     vulkanDevice->logicalDevice.destroyImageView(depthImageView, nullptr); 
      vulkanDevice->logicalDevice.destroyImage(depthImage, nullptr);
      vulkanDevice->logicalDevice.freeMemory(depthImageMemory, nullptr);
 
