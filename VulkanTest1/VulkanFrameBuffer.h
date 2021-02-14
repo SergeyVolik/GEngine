@@ -120,6 +120,34 @@ namespace vkGame
 			
 		}
 
+		/**
+		* Creates a default sampler for sampling from any of the framebuffer attachments
+		* Applications are free to create their own samplers for different use cases
+		*
+		* @param magFilter Magnification filter for lookups
+		* @param minFilter Minification filter for lookups
+		* @param adressMode Addressing mode for the U,V and W coordinates
+		*
+		* @return VkResult for the sampler creation
+		*/
+		vk::Result createSampler(vk::Filter magFilter, vk::Filter minFilter, vk::SamplerAddressMode adressMode)
+		{
+			vk::SamplerCreateInfo samplerInfo{};
+			samplerInfo.maxAnisotropy = 1.0f;
+			samplerInfo.magFilter = magFilter;
+			samplerInfo.minFilter = minFilter;
+			samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+			samplerInfo.addressModeU = adressMode;
+			samplerInfo.addressModeV = adressMode;
+			samplerInfo.addressModeW = adressMode;
+			samplerInfo.mipLodBias = 0.0f;
+			samplerInfo.maxAnisotropy = 1.0f;
+			samplerInfo.minLod = 0.0f;
+			samplerInfo.maxLod = 1.0f;
+			samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;;
+			return vulkanDevice->logicalDevice.createSampler(&samplerInfo, nullptr, &sampler);
+		}
+
 	};
 }
 
