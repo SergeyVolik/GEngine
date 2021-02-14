@@ -521,14 +521,14 @@ void te::VulkanRenderManager::createFramebuffers()
 
         if (i == 0)
         {
-            mySwapChain->swapChainFramebuffers[i]->addAttachment(attachmentInfo);
-            mySwapChain->swapChainFramebuffers[i]->createSampler(vk::Filter::eNearest, vk::Filter::eNearest, vk::SamplerAddressMode::eClampToEdge);
-            mySwapChain->swapChainFramebuffers[i]->createRenderPass(mySwapChain->getImageFormat());
+            mySwapChain->framebuffers[i]->addAttachment(attachmentInfo);
+            mySwapChain->framebuffers[i]->createSampler(vk::Filter::eNearest, vk::Filter::eNearest, vk::SamplerAddressMode::eClampToEdge);
+            mySwapChain->framebuffers[i]->createRenderPass(mySwapChain->getImageFormat());
         }
         else {
-            mySwapChain->swapChainFramebuffers[i]->attachments.push_back(mySwapChain->swapChainFramebuffers[0]->attachments[0]);
-            mySwapChain->swapChainFramebuffers[i]->sampler = mySwapChain->swapChainFramebuffers[0]->sampler;
-            mySwapChain->swapChainFramebuffers[i]->renderPass = mySwapChain->swapChainFramebuffers[0]->renderPass;
+            mySwapChain->framebuffers[i]->attachments.push_back(mySwapChain->framebuffers[0]->attachments[0]);
+            mySwapChain->framebuffers[i]->sampler = mySwapChain->framebuffers[0]->sampler;
+            mySwapChain->framebuffers[i]->renderPass = mySwapChain->framebuffers[0]->renderPass;
         }
 
 

@@ -113,7 +113,7 @@ namespace vkGame
 				{
 					
 					vulkanDevice->logicalDevice.destroyImage(attachments[i].image);					
-					vulkanDevice->logicalDevice.destroyImageView(attachments[i].view);				
+					vulkanDevice->logicalDevice.destroyImageView(attachments[i].view);
 					vulkanDevice->logicalDevice.freeMemory(attachments[i].memory);
 				}
 
@@ -290,7 +290,7 @@ namespace vkGame
 		void createRenderPass(vk::Format swapchainImageFormat)
 		{
 			vk::AttachmentDescription colorAttachment{};
-			colorAttachment.format = swapchainImageFormat /*swapChainImageFormat*/;
+			colorAttachment.format = swapchainImageFormat;
 			colorAttachment.samples = vk::SampleCountFlagBits::e1;
 			colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 			colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -299,17 +299,6 @@ namespace vkGame
 			colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
 			colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 		
-
-			//vk::AttachmentDescription depthAttachment{};
-			//depthAttachment.format = findDepthFormat();
-			//depthAttachment.samples = vk::SampleCountFlagBits::e1;
-			//depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-			//depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
-			//depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-			//depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-			//depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
-			//depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
 			std::vector<vk::AttachmentDescription> attachmentsDescriptions = { colorAttachment };
 
 			for (auto& attachment : attachments)

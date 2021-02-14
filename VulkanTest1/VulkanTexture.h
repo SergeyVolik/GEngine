@@ -1,6 +1,6 @@
-//#ifndef GTEXTURE
-//#define GTEXTURE
-//
+#ifndef GTEXTURE
+#define GTEXTURE
+
 //#include <ktx.h>
 //#include <ktxvulkan.h>
 //
@@ -16,7 +16,7 @@ namespace vkh
 	class Texture
 	{
 	public:
-		te::vkh::VulkanDevice device;
+		te::vkh::VulkanDevice* device;
 		vk::Image               image;
 		vk::ImageLayout         imageLayout;
 		vk::DeviceMemory        deviceMemory;
@@ -29,33 +29,48 @@ namespace vkh
 
 		void      updateDescriptor();
 		void      destroy();
-		bool loadFromFIle(std::string filename);
+		bool loadFromFile(std::string filename);
+	};
+
+	class Texture2D : public Texture
+	{
+	public:
+		void loadFromFile(
+			std::string        filename,
+			vk::Format           format,
+			te::vkh::VulkanDevice* device,
+			vk::Queue            copyQueue,
+			vk::ImageUsageFlags  imageUsageFlags = vk::ImageUsageFlagBits::eSampled,
+			vk::ImageLayout      imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+			bool               forceLinear = false);
+		void fromBuffer(
+			void* buffer,
+			vk::DeviceSize       bufferSize,
+			vk::Format           format,
+			uint32_t           texWidth,
+			uint32_t           texHeight,
+			te::vkh::VulkanDevice* device,
+			vk::Queue            copyQueue,
+			vk::Filter           filter = vk::Filter::eLinear,
+			vk::ImageUsageFlags  imageUsageFlags = vk::ImageUsageFlagBits::eSampled,
+			vk::ImageLayout      imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal);
+	};
+
+		class TextureCubeMap : public Texture
+	{
+	public:
+		void loadFromFile(
+			std::string        filename,
+			vk::Format           format,
+			te::vkh::VulkanDevice* device,
+			vk::Queue            copyQueue,
+			vk::ImageUsageFlags  imageUsageFlags = vk::ImageUsageFlagBits::eSampled,
+			vk::ImageLayout      imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal);
 	};
 }
-//
-//	class Texture2D : public Texture
-//	{
-//	public:
-//		void loadFromFile(
-//			std::string        filename,
-//			vk::Format           format,
-//			te::vkh::VulkanDevice* device,
-//			vk::Queue            copyQueue,
-//			vk::ImageUsageFlags  imageUsageFlags = vk::ImageUsageFlagBits::eSampled,
-//			vk::ImageLayout      imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-//			bool               forceLinear = false);
-//		void fromBuffer(
-//			void* buffer,
-//			vk::DeviceSize       bufferSize,
-//			vk::Format           format,
-//			uint32_t           texWidth,
-//			uint32_t           texHeight,
-//			te::vkh::VulkanDevice* device,
-//			vk::Queue            copyQueue,
-//			vk::Filter           filter = vk::Filter::eLinear,
-//			vk::ImageUsageFlags  imageUsageFlags = vk::ImageUsageFlagBits::eSampled,
-//			vk::ImageLayout      imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal);
-//	};
+
+
+	
 //
 //	class Texture2DArray : public Texture
 //	{
@@ -82,5 +97,5 @@ namespace vkh
 //	};
 //}
 //
-//#endif // !GTEXTURE
+#endif // !GTEXTURE
 //

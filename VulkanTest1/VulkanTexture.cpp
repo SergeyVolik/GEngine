@@ -20,16 +20,18 @@ namespace vkh
 
 	void Texture::destroy()
 	{
-		vkDestroyImageView(device.logicalDevice, view, nullptr);
-		vkDestroyImage(device.logicalDevice, image, nullptr);
+		device->logicalDevice.destroyImageView(view, nullptr);
+		device->logicalDevice.destroyImage(image, nullptr);
 		if (sampler)
 		{
-			vkDestroySampler(device.logicalDevice, sampler, nullptr);
+			device->logicalDevice.destroySampler(sampler, nullptr);
+			
 		}
-		vkFreeMemory(device.logicalDevice, deviceMemory, nullptr);
+		device->logicalDevice.freeMemory(deviceMemory);
+
 	}
 
-	bool Texture::loadFromFIle(std::string filename)
+	bool Texture::loadFromFile(std::string filename)
 	{
 		
 	
