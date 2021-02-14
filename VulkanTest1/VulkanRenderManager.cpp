@@ -134,7 +134,7 @@ void te::VulkanRenderManager::createLogicalDevice()
 
 void te::VulkanRenderManager::createSwapchain()
 {
-    mySwapChain = new vkGame::SwapChain(surface, vulkanDevice);
+    mySwapChain = new vkGame::VulkanSwapChain(surface, vulkanDevice);
     int width, height;
     window->getFramebufferSize(&width, &height);
     mySwapChain->createSwapChain(width, height);
@@ -218,9 +218,9 @@ void te::VulkanRenderManager::terminate()
     instance-> vulkanDevice->logicalDevice.freeMemory(instance->vertexBufferMemory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->renderFinishedSemaphores[i], nullptr);
-        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->imageAvailableSemaphores[i], nullptr);
-        instance-> vulkanDevice->logicalDevice.destroyFence(instance->inFlightFences[i], nullptr);
+        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->synch.renderFinishedSemaphores[i], nullptr);
+        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->synch.imageAvailableSemaphores[i], nullptr);
+        instance-> vulkanDevice->logicalDevice.destroyFence(instance->synch.inFlightFences[i], nullptr);
     }
 
     instance-> vulkanDevice->logicalDevice.destroyPipelineCache(instance->pipelineCache, nullptr);
@@ -964,10 +964,10 @@ void te::VulkanRenderManager::createCommandBuffers()
 
 void te::VulkanRenderManager::createSyncObjects()
 {
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    imagesInFlight.resize(mySwapChain->getChainsCount(), nullptr);
+    synch.imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    synch.renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    synch.inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    synch.imagesInFlight.resize(mySwapChain->getChainsCount(), nullptr);
 
     vk::SemaphoreCreateInfo semaphoreInfo{};
    
@@ -976,9 +976,9 @@ void te::VulkanRenderManager::createSyncObjects()
     fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if ( vulkanDevice->logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess ||
-             vulkanDevice->logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != vk::Result::eSuccess ||
-             vulkanDevice->logicalDevice.createFence(&fenceInfo, nullptr, &inFlightFences[i]) != vk::Result::eSuccess) {
+        if ( vulkanDevice->logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &synch.imageAvailableSemaphores[i]) != vk::Result::eSuccess ||
+             vulkanDevice->logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &synch.renderFinishedSemaphores[i]) != vk::Result::eSuccess ||
+             vulkanDevice->logicalDevice.createFence(&fenceInfo, nullptr, &synch.inFlightFences[i]) != vk::Result::eSuccess) {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
@@ -1270,13 +1270,7 @@ void te::VulkanRenderManager::recreateSwapChain()
 
 void te::VulkanRenderManager::cleanupSwapChain()
 {
-     //delete depth representetion
-     //vulkanDevice->logicalDevice.destroyImageView(depthImageView, nullptr); 
-     //vulkanDevice->logicalDevice.destroyImage(depthImage, nullptr);
-     //vulkanDevice->logicalDevice.freeMemory(depthImageMemory, nullptr);
 
-
-    
 
      vulkanDevice->logicalDevice.freeCommandBuffers(commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
@@ -1284,10 +1278,6 @@ void te::VulkanRenderManager::cleanupSwapChain()
 
      vulkanDevice->logicalDevice.destroyPipeline( graphicsPipeline, nullptr);
      vulkanDevice->logicalDevice.destroyPipelineLayout( pipelineLayout, nullptr);
-
-   
-
-     //vulkanDevice->logicalDevice.destroyRenderPass( renderPass, nullptr);
 
     
     mySwapChain->destroySwapchain();
@@ -1302,11 +1292,11 @@ void te::VulkanRenderManager::cleanupSwapChain()
 
 void te::VulkanRenderManager::drawFrame()
 {
-     vulkanDevice->logicalDevice.waitForFences(1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+     vulkanDevice->logicalDevice.waitForFences(1, &synch.inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
     
     uint32_t imageIndex;
    
-    vk::Result result =  vulkanDevice->logicalDevice.acquireNextImageKHR(mySwapChain->getSwapchain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
+    vk::Result result =  vulkanDevice->logicalDevice.acquireNextImageKHR(mySwapChain->getSwapchain(), UINT64_MAX, synch.imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
    
     if (result == vk::Result::eErrorOutOfDateKHR) {
         recreateSwapChain();
@@ -1319,15 +1309,15 @@ void te::VulkanRenderManager::drawFrame()
 
     updateUniformBuffer(imageIndex);
 
-    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-         vulkanDevice->logicalDevice.waitForFences(1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+    if (synch.imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+         vulkanDevice->logicalDevice.waitForFences(1, &synch.imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
 
-    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
+    synch.imagesInFlight[imageIndex] = synch.inFlightFences[currentFrame];
 
     vk::SubmitInfo submitInfo{};
   
-    vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+    vk::Semaphore waitSemaphores[] = { synch.imageAvailableSemaphores[currentFrame] };
     vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -1336,13 +1326,13 @@ void te::VulkanRenderManager::drawFrame()
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
 
-    vk::Semaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+    vk::Semaphore signalSemaphores[] = { synch.renderFinishedSemaphores[currentFrame] };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-     vulkanDevice->logicalDevice.resetFences(1, &inFlightFences[currentFrame]);
+     vulkanDevice->logicalDevice.resetFences(1, &synch.inFlightFences[currentFrame]);
 
-    if (vulkanQueues.graphicsQueue.submit(1, &submitInfo, inFlightFences[currentFrame]) != vk::Result::eSuccess) {
+    if (vulkanQueues.graphicsQueue.submit(1, &submitInfo, synch.inFlightFences[currentFrame]) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 

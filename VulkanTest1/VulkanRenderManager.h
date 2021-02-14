@@ -91,7 +91,7 @@ namespace te
 
         vk::SurfaceKHR surface;
 
-        vkGame::SwapChain* mySwapChain;
+        vkGame::VulkanSwapChain* mySwapChain;
         te::vkh::VulkanDevice* vulkanDevice;
 
         vk::PhysicalDeviceProperties deviceProperties;
@@ -108,13 +108,19 @@ namespace te
         //-------------------------------------------- синхронизация двойной буферизации------------------------------
 
         //семафора для синхронизации (ожидания пока изображение не доступно)
-        std::vector<vk::Semaphore> imageAvailableSemaphores;
-        //семафора для синхронизации (ожидания пока операции рендеринга не окончены)
-        std::vector<vk::Semaphore> renderFinishedSemaphores;
 
-        
-        std::vector<vk::Fence> inFlightFences;
-        std::vector<vk::Fence> imagesInFlight;
+        struct {
+            std::vector<vk::Semaphore> imageAvailableSemaphores;
+            //семафора для синхронизации (ожидания пока операции рендеринга не окончены)
+            std::vector<vk::Semaphore> renderFinishedSemaphores;
+
+
+            std::vector<vk::Fence> inFlightFences;
+            std::vector<vk::Fence> imagesInFlight;
+
+        } synch;
+
+       
 
         //-----------------------------------------------------графика----------------------------------------------
        
@@ -125,7 +131,7 @@ namespace te
         vk::Pipeline graphicsPipeline;
         vk::PipelineCache pipelineCache;
         vk::CommandPool commandPool;
-
+        //vk::CommandPool transferCommandPool;
         //очередь команд для вычисления елементов графики
 
         struct
@@ -166,21 +172,12 @@ namespace te
 
         std::vector<vk::CommandBuffer> commandBuffers;
 
-
-       
-
-        //текущий номер фрейма в spawChain (двойная-тройная буферизация)
         size_t currentFrame = 0;     
 
 
         //std::list<Renderer*> renderers;
         Entity* gObject;
         Transform* gTransform;
-
-
-
-
-
 
         //инициализация библиотеки вулка
         void createInstance();

@@ -14,11 +14,11 @@ namespace vkGame {
 
    
 
-	class SwapChain
+	class VulkanSwapChain
 	{
     public:
         //буфер изображения двойной-тройной буферизации
-        std::vector <vkGame::VulkanFrameBuffer*> swapChainFramebuffers;
+        std::vector <vkGame::VulkanFrameBuffer*> framebuffers;
     private:
         te::vkh::VulkanDevice* device;
         //поверхность для выводна на екран
@@ -100,12 +100,12 @@ namespace vkGame {
             }
         }
     public:
-        SwapChain(vk::SurfaceKHR surface, te::vkh::VulkanDevice* device) : surface(surface), device(device), width(0), height(0), details({})
+        VulkanSwapChain(vk::SurfaceKHR surface, te::vkh::VulkanDevice* device) : surface(surface), device(device), width(0), height(0), details({})
         {
 
         }
 
-        ~SwapChain()
+        ~VulkanSwapChain()
         {
            device->instance.destroySurfaceKHR(surface, nullptr);
         }
@@ -195,11 +195,11 @@ namespace vkGame {
 
         void destroyFramebuffers()
         {          
-            for (int i = 0; i < swapChainFramebuffers[0]->attachments.size(); i++)
+            for (int i = 0; i < framebuffers[0]->attachments.size(); i++)
             {
-                if (swapChainFramebuffers[0]->attachments[i].uniqueAttachment)
+                if (framebuffers[0]->attachments[i].uniqueAttachment)
                 {
-                    auto attachment = swapChainFramebuffers[0]->attachments[i];
+                    auto attachment = framebuffers[0]->attachments[i];
 
                         
                     device->logicalDevice.destroyImage(attachment.image);
@@ -210,26 +210,26 @@ namespace vkGame {
             }
 
            
-                device->logicalDevice.destroyRenderPass(swapChainFramebuffers[0]->renderPass);
+                device->logicalDevice.destroyRenderPass(framebuffers[0]->renderPass);
 
           
-                device->logicalDevice.destroySampler(swapChainFramebuffers[0]->sampler);
+                device->logicalDevice.destroySampler(framebuffers[0]->sampler);
 
-            for (int i = 0; i < swapChainFramebuffers.size(); i++)
+            for (int i = 0; i < framebuffers.size(); i++)
             {
-                delete swapChainFramebuffers[i];
+                delete framebuffers[i];
             }
         }
     
        
         vk::RenderPass getRenderPass()
         {
-            return swapChainFramebuffers[0]->renderPass;
+            return framebuffers[0]->renderPass;
         }
 
         vk::Framebuffer getFrameBufferByIndex(int i)
         {
-            return swapChainFramebuffers[i]->framebuffer;
+            return framebuffers[i]->framebuffer;
         }
 
         vk::SwapchainKHR getSwapchain()
@@ -239,27 +239,22 @@ namespace vkGame {
 
         void initFrameBuffers()
         {
-            swapChainFramebuffers.resize(swapChainImageViews.size());
+            framebuffers.resize(swapChainImageViews.size());
 
             for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-                swapChainFramebuffers[i] = new vkGame::VulkanFrameBuffer(device);
+                framebuffers[i] = new vkGame::VulkanFrameBuffer(device);
             }
         }
         void createFramebuffers()
         {
-            
-            
-           
+      
             for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-               
 
-               
 
-                swapChainFramebuffers[i]->width = swapChainExtent.width;
-                swapChainFramebuffers[i]->height = swapChainExtent.height;
-
-                
-                swapChainFramebuffers[i]->createFramebuffer(swapChainImageViews[i]);
+                framebuffers[i]->width = swapChainExtent.width;
+                framebuffers[i]->height = swapChainExtent.height;
+            
+                framebuffers[i]->createFramebuffer(swapChainImageViews[i]);
 
             }
         }
