@@ -53,7 +53,7 @@ namespace vkGame {
             swapChainImageViews.resize(swapChainImages.size());
 
             for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-                swapChainImageViews[i] = te::vkh::VulkanHelper::createImageView(swapChainImages[i], colorFormat, vk::ImageAspectFlagBits::eColor, 1, device->logicalDevice);
+                swapChainImageViews[i] = device->createImageView(swapChainImages[i], colorFormat, vk::ImageAspectFlagBits::eColor, 1);
             }
         }
 
@@ -116,7 +116,7 @@ namespace vkGame {
             width = newWidth;
             height = newHeight;
 
-            te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::VulkanHelper::querySwapChainSupport(device->physicalDevice, surface);
+            te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::querySwapChainSupport(surface, device->physicalDevice);
 
             //querySwapChainSupport(physicalDevice)
             vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -139,7 +139,7 @@ namespace vkGame {
             createInfo.imageArrayLayers = 1;
             createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
-            te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies(device->physicalDevice, surface);
+            te::vkh::QueueFamilyIndices indices = te::vkh::findQueueFamilies(surface, device->physicalDevice);
             uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
             if (indices.graphicsFamily != indices.presentFamily) {

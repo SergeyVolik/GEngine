@@ -244,9 +244,9 @@ namespace te
             void* pUserData
         );
         vk::Format findDepthFormat();
-        uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+     
         vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
-        void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory);
+        
      
         bool checkValidationLayerSupport();
 

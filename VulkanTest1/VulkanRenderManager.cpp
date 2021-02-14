@@ -84,7 +84,7 @@ void te::VulkanRenderManager::pickPhysicalDevice()
 
 void te::VulkanRenderManager::createLogicalDevice()
 {
-    te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies( vulkanDevice->physicalDevice, surface);
+    te::vkh::QueueFamilyIndices indices = te::vkh::findQueueFamilies(surface, vulkanDevice->physicalDevice);
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
@@ -302,8 +302,8 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     auto fragShaderCode = te::FileReader::readFile("shaders/frag.spv");
 
     //создание шейдерных модулей вулкана
-    vk::ShaderModule vertShaderModule = te::vkh::VulkanHelper::createShaderModule( vulkanDevice->logicalDevice, vertShaderCode);
-    vk::ShaderModule fragShaderModule = te::vkh::VulkanHelper::createShaderModule( vulkanDevice->logicalDevice, fragShaderCode);
+    vk::ShaderModule vertShaderModule =  vulkanDevice->createShaderModule(vertShaderCode);
+    vk::ShaderModule fragShaderModule =  vulkanDevice->createShaderModule(fragShaderCode);
 
     
     //создание структур для уровня шейдеров в графичксом пайплайне
@@ -452,7 +452,7 @@ void te::VulkanRenderManager::createGraphicsPipeline()
 
 void te::VulkanRenderManager::createCommandPool()
 {
-    te::vkh::QueueFamilyIndices queueFamilyIndices = te::vkh::VulkanHelper::findQueueFamilies( vulkanDevice->physicalDevice, surface);
+    te::vkh::QueueFamilyIndices queueFamilyIndices =  te::vkh::findQueueFamilies(surface, vulkanDevice->physicalDevice);
 
     vk::CommandPoolCreateInfo poolInfo{};
    
@@ -478,7 +478,7 @@ void te::VulkanRenderManager::createDepthResources()
         depthImage, depthImageMemory
     );
 
-    depthImageView = te::vkh::VulkanHelper::createImageView(
+    depthImageView =  vulkanDevice->createImageView(
         depthImage, depthFormat,
         vk::ImageAspectFlagBits::eDepth, 1, vulkanDevice->logicalDevice);*/
 }
@@ -555,11 +555,11 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
 
     vk::Buffer stagingBuffer;
     vk::DeviceMemory stagingBufferMemory;
-    te::vkh::VulkanHelper::createBuffer(
+     vulkanDevice->createBuffer(
         imageSize,
         vk::BufferUsageFlagBits::eTransferSrc,
         vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-        stagingBuffer, stagingBufferMemory,  vulkanDevice->physicalDevice,  vulkanDevice->logicalDevice);
+        stagingBuffer, stagingBufferMemory);
 
     void* data;
      vulkanDevice->logicalDevice.mapMemory(stagingBufferMemory, 0, imageSize, {}, &data);
@@ -568,7 +568,7 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
 
     stbi_image_free(pixels);
 
-    createImage(
+    vulkanDevice->createImage(
         texWidth, texHeight, mipLevels,
         vk::Format::eR8G8B8A8Srgb,
         vk::ImageTiling::eOptimal,
@@ -588,14 +588,13 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
         mipLevels
     );
 
-    te::vkh::VulkanHelper::copyBufferToImage(
+     vulkanDevice->copyBufferToImage(
         stagingBuffer,
         textureImage,
         static_cast<uint32_t>(texWidth),
         static_cast<uint32_t>(texHeight),
         commandPool,
-        vulkanQueues.graphicsQueue,
-         vulkanDevice->logicalDevice
+        vulkanQueues.graphicsQueue
     );
    
     vkDestroyBuffer( vulkanDevice->logicalDevice, stagingBuffer, nullptr);
@@ -612,11 +611,11 @@ void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32
 
 void te::VulkanRenderManager::createTextureImageView(vk::ImageView& imgView, const vk::Image textureImage, const uint32_t mipLevels)
 {
-    imgView = te::vkh::VulkanHelper::createImageView(
+    imgView =  vulkanDevice->createImageView(
         textureImage,
         vk::Format::eR8G8B8A8Srgb,
         vk::ImageAspectFlagBits::eColor,
-        mipLevels,  vulkanDevice->logicalDevice
+        mipLevels
     );
 }
 
@@ -656,7 +655,7 @@ void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageF
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool,  vulkanDevice->logicalDevice);
+    vk::CommandBuffer commandBuffer =  vulkanDevice->beginSingleTimeCommands(commandPool);
 
     vk::ImageMemoryBarrier barrier{};
  
@@ -738,12 +737,12 @@ void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageF
         {}, 0, nullptr, 0, nullptr, 1, &barrier
     );
 
-    te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool,  vulkanDevice->logicalDevice);
+     vulkanDevice->endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool);
 }
 
 void te::VulkanRenderManager::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels)
 {
-    vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool,  vulkanDevice->logicalDevice);
+    vk::CommandBuffer commandBuffer =  vulkanDevice->beginSingleTimeCommands(commandPool);
 
     vk::ImageMemoryBarrier barrier{};
    
@@ -789,7 +788,7 @@ void te::VulkanRenderManager::transitionImageLayout(vk::Image image, vk::Format 
 
     );
 
-    te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool,  vulkanDevice->logicalDevice);
+     vulkanDevice->endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool);
 }
 
 
@@ -832,12 +831,12 @@ void te::VulkanRenderManager::createUniformBuffers()
     uniformBuffersMemory.resize(mySwapChain->getChainsCount());
 
     for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
-        te::vkh::VulkanHelper::createBuffer(
+         vulkanDevice->createBuffer(
             bufferSize,
             vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eHostVisible  |
             vk::MemoryPropertyFlagBits::eHostCoherent,
-            uniformBuffers[i], uniformBuffersMemory[i],  vulkanDevice->physicalDevice,  vulkanDevice->logicalDevice
+            uniformBuffers[i], uniformBuffersMemory[i]
         );
     }
 }
@@ -1054,13 +1053,13 @@ std::vector<const char*> te::VulkanRenderManager::getRequiredExtensions()
 
 bool te::VulkanRenderManager::isDeviceSuitable(vk::PhysicalDevice physicalDevice)
 {
-    te::vkh::QueueFamilyIndices indices = te::vkh::VulkanHelper::findQueueFamilies(physicalDevice, surface);
+    te::vkh::QueueFamilyIndices indices =  te::vkh::findQueueFamilies(surface, physicalDevice);
 
     bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice);
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::VulkanHelper::querySwapChainSupport(physicalDevice, surface);
+        te::vkh::SwapChainSupportDetails swapChainSupport = te::vkh::querySwapChainSupport(surface, physicalDevice);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
@@ -1118,19 +1117,6 @@ vk::Format te::VulkanRenderManager::findDepthFormat()
     );
 }
 
-uint32_t te::VulkanRenderManager::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
-{
-
-    vk::PhysicalDeviceMemoryProperties memProperties = deviceMemoryProperties;
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
-}
 
 vk::Format te::VulkanRenderManager::findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
 {
@@ -1149,41 +1135,6 @@ vk::Format te::VulkanRenderManager::findSupportedFormat(const std::vector<vk::Fo
     throw std::runtime_error("failed to find supported format!");
 }
 
-void te::VulkanRenderManager::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory)
-{
-    vk::ImageCreateInfo imageInfo{};
-    
-    imageInfo.imageType = vk::ImageType::e2D; 
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = mipLevels;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = vk::ImageLayout::eUndefined;
-    imageInfo.usage = usage;
-    imageInfo.samples = vk::SampleCountFlagBits::e1;
-    imageInfo.sharingMode = vk::SharingMode::eExclusive;
-
-    if ( vulkanDevice->logicalDevice.createImage(&imageInfo, nullptr, &image) != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    vk::MemoryRequirements memRequirements =  vulkanDevice->logicalDevice.getImageMemoryRequirements(image);
- 
-
-    vk::MemoryAllocateInfo allocInfo{};
-   
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    if ( vulkanDevice->logicalDevice.allocateMemory(&allocInfo, nullptr, &imageMemory) != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-     vulkanDevice->logicalDevice.bindImageMemory(image, imageMemory, 0);
-   
-}
 
 
 
@@ -1216,27 +1167,23 @@ bool te::VulkanRenderManager::checkValidationLayerSupport()
 
 void te::VulkanRenderManager::createVertexBuffer(std::vector<te::Vertex> vertices, vk::Buffer& vertexBuffer, vk::DeviceMemory& vertexBufferMemory)
 {
-    te::vkh::VulkanHelper::createVertexBuffer(
+     vulkanDevice->createVertexBuffer(
         vertices,
         vertexBuffer,
         vertexBufferMemory,
         instance->commandPool,
-        instance->vulkanQueues.graphicsQueue,
-        instance-> vulkanDevice->physicalDevice,
-        instance-> vulkanDevice->logicalDevice
+        instance->vulkanQueues.graphicsQueue      
     );
 }
 
 void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, vk::Buffer& indexBuffer, vk::DeviceMemory& indexBufferMemory)
 {
-    te::vkh::VulkanHelper::createIndexBuffer(
+     vulkanDevice->createIndexBuffer(
         indices,
         indexBuffer,
         indexBufferMemory,
         instance->commandPool,
-        instance->vulkanQueues.graphicsQueue,
-        instance-> vulkanDevice->physicalDevice,
-        instance-> vulkanDevice->logicalDevice
+        instance->vulkanQueues.graphicsQueue
     );
 }
 

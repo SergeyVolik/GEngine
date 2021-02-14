@@ -2,26 +2,25 @@
 #include <stdexcept>
 #include "Vertex.h"
 
-void te::vkh::VulkanHelper::copyBuffer(
+void te::vkh::VulkanDevice::copyBuffer(
     vk::Buffer srcBuffer,
     vk::Buffer dstBuffer,
     vk::DeviceSize size,
     vk::Queue graphicsQueue,
-    vk::CommandPool commandPool,
-    vk::Device device
+    vk::CommandPool commandPool
 )
 {
-    vk::CommandBuffer commandBuffer = beginSingleTimeCommands(commandPool, device);
+    vk::CommandBuffer commandBuffer = beginSingleTimeCommands(commandPool);
 
     vk::BufferCopy copyRegion{};
     copyRegion.size = size;
   
     commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
  
-    endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
+    endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool);
 }
 
-vk::Bool32 te::vkh::VulkanHelper::formatIsFilterable(vk::PhysicalDevice physicalDevice, vk::Format format, vk::ImageTiling tiling)
+vk::Bool32 te::vkh::VulkanDevice::formatIsFilterable(vk::Format format, vk::ImageTiling tiling)
 {
     vk::FormatProperties formatProps;
    
@@ -37,7 +36,7 @@ vk::Bool32 te::vkh::VulkanHelper::formatIsFilterable(vk::PhysicalDevice physical
     return false;
 }
 
-void te::vkh::VulkanHelper::insertImageMemoryBarrier(
+void te::vkh::VulkanDevice::insertImageMemoryBarrier(
     vk::CommandBuffer cmdbuffer,
     vk::Image image,
     vk::AccessFlags srcAccessMask,
@@ -72,7 +71,7 @@ void te::vkh::VulkanHelper::insertImageMemoryBarrier(
 
 }
 
-void te::vkh::VulkanHelper::setImageLayout(
+void te::vkh::VulkanDevice::setImageLayout(
     vk::CommandBuffer cmdbuffer,
     vk::Image image,
     vk::ImageLayout oldImageLayout,
@@ -198,7 +197,7 @@ void te::vkh::VulkanHelper::setImageLayout(
         1, &imageMemoryBarrier);
 }
 
-void te::vkh::VulkanHelper::setImageLayout(
+void te::vkh::VulkanDevice::setImageLayout(
     vk::CommandBuffer cmdbuffer,
     vk::Image image,
     vk::ImageAspectFlags aspectMask,
@@ -215,11 +214,10 @@ void te::vkh::VulkanHelper::setImageLayout(
     setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
 }
 
-void te::vkh::VulkanHelper::endSingleTimeCommands(
+void te::vkh::VulkanDevice::endSingleTimeCommands(
     vk::CommandBuffer commandBuffer,
     vk::Queue graphicsQueue,
-    vk::CommandPool commandPool,
-    vk::Device device
+    vk::CommandPool commandPool
 )
 {
     commandBuffer.end();
@@ -233,10 +231,10 @@ void te::vkh::VulkanHelper::endSingleTimeCommands(
   
     graphicsQueue.waitIdle();  
    
-    device.freeCommandBuffers(commandPool, 1, &commandBuffer);
+    logicalDevice.freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
-vk::ShaderModule te::vkh::VulkanHelper::createShaderModule(vk::Device device, const std::vector<char>& code)
+vk::ShaderModule te::vkh::VulkanDevice::createShaderModule(const std::vector<char>& code)
 {
     vk::ShaderModuleCreateInfo createInfo{};
 
@@ -244,14 +242,14 @@ vk::ShaderModule te::vkh::VulkanHelper::createShaderModule(vk::Device device, co
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
     vk::ShaderModule shaderModule;
-    if (device.createShaderModule(&createInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
+    if (logicalDevice.createShaderModule(&createInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create shader module!");
     }
 
     return shaderModule;
 }
 
-vk::CommandBuffer te::vkh::VulkanHelper::beginSingleTimeCommands(vk::CommandPool commandPool, vk::Device device)
+vk::CommandBuffer te::vkh::VulkanDevice::beginSingleTimeCommands(vk::CommandPool commandPool)
 {
     vk::CommandBufferAllocateInfo allocInfo{};
     allocInfo.level = vk::CommandBufferLevel::ePrimary;
@@ -260,7 +258,7 @@ vk::CommandBuffer te::vkh::VulkanHelper::beginSingleTimeCommands(vk::CommandPool
 
     vk::CommandBuffer commandBuffer;
     
-    device.allocateCommandBuffers(&allocInfo, &commandBuffer);
+    logicalDevice.allocateCommandBuffers(&allocInfo, &commandBuffer);
 
     vk::CommandBufferBeginInfo beginInfo{};
     beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -271,14 +269,12 @@ vk::CommandBuffer te::vkh::VulkanHelper::beginSingleTimeCommands(vk::CommandPool
 }
 
 
-void te::vkh::VulkanHelper::createVertexBuffer(
+void te::vkh::VulkanDevice::createVertexBuffer(
     std::vector<te::Vertex> vertices,
     vk::Buffer& vertexBuffer,
     vk::DeviceMemory& vertexBufferMemory,
     vk::CommandPool commandPool,
-    vk::Queue graphicsQueue,
-    vk::PhysicalDevice phisycalDevice,
-    vk::Device device
+    vk::Queue graphicsQueue
 )
 {
     vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
@@ -291,17 +287,16 @@ void te::vkh::VulkanHelper::createVertexBuffer(
         vk::BufferUsageFlagBits::eTransferSrc,
         vk::MemoryPropertyFlagBits::eHostVisible |
         vk::MemoryPropertyFlagBits::eHostCoherent,
-        stagingBuffer, stagingBufferMemory,
-        phisycalDevice, device
+        stagingBuffer, stagingBufferMemory
     );
 
     void* data;
    
-    device.mapMemory(stagingBufferMemory, 0, bufferSize, {}, &data);
+    logicalDevice.mapMemory(stagingBufferMemory, 0, bufferSize, {}, &data);
    
     memcpy(data, vertices.data(), (size_t)bufferSize);
 
-    device.unmapMemory(stagingBufferMemory);
+    logicalDevice.unmapMemory(stagingBufferMemory);
 
 
     createBuffer(
@@ -309,22 +304,20 @@ void te::vkh::VulkanHelper::createVertexBuffer(
         vk::BufferUsageFlagBits::eTransferDst |
         vk::BufferUsageFlagBits::eVertexBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal,
-        vertexBuffer, vertexBufferMemory, phisycalDevice, device);
+        vertexBuffer, vertexBufferMemory);
 
-    te::vkh::VulkanHelper::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, graphicsQueue, commandPool, device);
+    te::vkh::VulkanDevice::copyBuffer(stagingBuffer, vertexBuffer, bufferSize, graphicsQueue, commandPool);
 
-    device.destroyBuffer(stagingBuffer, nullptr);
-    device.freeMemory(stagingBufferMemory, nullptr);
+    logicalDevice.destroyBuffer(stagingBuffer, nullptr);
+    logicalDevice.freeMemory(stagingBufferMemory, nullptr);
 }
 
-void te::vkh::VulkanHelper::createIndexBuffer(
+void te::vkh::VulkanDevice::createIndexBuffer(
     std::vector<uint32_t> indices,
     vk::Buffer& indexBuffer, 
     vk::DeviceMemory& indexBufferMemory,
     vk::CommandPool commandPool,
-    vk::Queue graphicsQueue,
-    vk::PhysicalDevice phisycalDevice,
-    vk::Device device
+    vk::Queue graphicsQueue
 )
 {
     vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
@@ -336,32 +329,30 @@ void te::vkh::VulkanHelper::createIndexBuffer(
         vk::BufferUsageFlagBits::eTransferSrc,
         vk::MemoryPropertyFlagBits::eHostVisible |
         vk::MemoryPropertyFlagBits::eHostCoherent,
-        stagingBuffer, stagingBufferMemory,
-        phisycalDevice, device
+        stagingBuffer, stagingBufferMemory   
     );
 
     void* data;
    
-    device.mapMemory(stagingBufferMemory, 0, bufferSize, {}, &data);
+    logicalDevice.mapMemory(stagingBufferMemory, 0, bufferSize, {}, &data);
     memcpy(data, indices.data(), (size_t)bufferSize);
-    device.unmapMemory(stagingBufferMemory);
+    logicalDevice.unmapMemory(stagingBufferMemory);
 
     createBuffer(
         bufferSize,
         vk::BufferUsageFlagBits::eTransferDst |
         vk::BufferUsageFlagBits::eIndexBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal,
-        indexBuffer, indexBufferMemory,
-        phisycalDevice, device
+        indexBuffer, indexBufferMemory
     );
 
-    te::vkh::VulkanHelper::copyBuffer(stagingBuffer, indexBuffer, bufferSize, graphicsQueue, commandPool, device);
+    copyBuffer(stagingBuffer, indexBuffer, bufferSize, graphicsQueue, commandPool);
 
-    device.destroyBuffer(stagingBuffer, nullptr);
-    device.freeMemory(stagingBufferMemory, nullptr);
+    logicalDevice.destroyBuffer(stagingBuffer, nullptr);
+    logicalDevice.freeMemory(stagingBufferMemory, nullptr);
 }
 
-vk::ImageView  te::vkh::VulkanHelper::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, vk::Device device)
+vk::ImageView  te::vkh::VulkanDevice::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels)
 {
     vk::ImageViewCreateInfo viewInfo{};
 
@@ -375,19 +366,19 @@ vk::ImageView  te::vkh::VulkanHelper::createImageView(vk::Image image, vk::Forma
     viewInfo.subresourceRange.layerCount = 1;
 
     vk::ImageView imageView;
-    if (device.createImageView(&viewInfo, nullptr, &imageView) != vk::Result::eSuccess) {
+    if (logicalDevice.createImageView(&viewInfo, nullptr, &imageView) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create texture image view!");
     }
 
     return imageView;
 }
 
-te::vkh::QueueFamilyIndices te::vkh::VulkanHelper::findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface)
+te::vkh::QueueFamilyIndices te::vkh::findQueueFamilies(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice)
 {
-    QueueFamilyIndices indices;
+    te::vkh::QueueFamilyIndices indices;
 
 
-    std::vector<vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
+    std::vector<vk::QueueFamilyProperties> queueFamilies = physicalDevice.getQueueFamilyProperties();
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
         if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
@@ -400,7 +391,7 @@ te::vkh::QueueFamilyIndices te::vkh::VulkanHelper::findQueueFamilies(vk::Physica
         }
 
         vk::Bool32 presentSupport = false;
-        device.getSurfaceSupportKHR(i, surface, &presentSupport);
+        physicalDevice.getSurfaceSupportKHR(i, surface, &presentSupport);
 
         if (presentSupport) {
             indices.presentFamily = i;
@@ -416,8 +407,8 @@ te::vkh::QueueFamilyIndices te::vkh::VulkanHelper::findQueueFamilies(vk::Physica
     return indices;
 }
 
- te::vkh::SwapChainSupportDetails te::vkh::VulkanHelper::querySwapChainSupport(
-     vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
+ te::vkh::SwapChainSupportDetails te::vkh::querySwapChainSupport(
+    vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice)
 {
      te::vkh::SwapChainSupportDetails details = {};
 
@@ -430,14 +421,12 @@ te::vkh::QueueFamilyIndices te::vkh::VulkanHelper::findQueueFamilies(vk::Physica
     return details;
 }
 
-void te::vkh::VulkanHelper::createBuffer(
+void te::vkh::VulkanDevice::createBuffer(
     vk::DeviceSize size,
     vk::BufferUsageFlags usage,
     vk::MemoryPropertyFlags properties,
     vk::Buffer& buffer,
-    vk::DeviceMemory& bufferMemory,
-    vk::PhysicalDevice phisycalDevice,
-    vk::Device device)
+    vk::DeviceMemory& bufferMemory)
 {
     vk::BufferCreateInfo bufferInfo{};
     
@@ -445,26 +434,26 @@ void te::vkh::VulkanHelper::createBuffer(
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
-    if (device.createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) {
+    if (logicalDevice.createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create buffer!");
     }
 
     vk::MemoryRequirements memRequirements;
-    device.getBufferMemoryRequirements(buffer, &memRequirements);
+    logicalDevice.getBufferMemoryRequirements(buffer, &memRequirements);
 
     vk::MemoryAllocateInfo allocInfo{};
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = te::vkh::VulkanHelper::findMemoryType(memRequirements.memoryTypeBits, properties, phisycalDevice);
+    allocInfo.memoryTypeIndex = te::vkh::VulkanDevice::findMemoryType(memRequirements.memoryTypeBits, properties);
 
-    if (device.allocateMemory(&allocInfo, nullptr, &bufferMemory) != vk::Result::eSuccess) {
+    if (logicalDevice.allocateMemory(&allocInfo, nullptr, &bufferMemory) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to allocate buffer memory!");
     }
 
    
-    device.bindBufferMemory(buffer, bufferMemory, 0);
+    logicalDevice.bindBufferMemory(buffer, bufferMemory, 0);
 }
 
- uint32_t te::vkh::VulkanHelper::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties, vk::PhysicalDevice physicalDevice)
+ uint32_t te::vkh::VulkanDevice::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 {
     vk::PhysicalDeviceMemoryProperties memProperties;
 
@@ -479,9 +468,9 @@ void te::vkh::VulkanHelper::createBuffer(
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
- void te::vkh::VulkanHelper::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, vk::CommandPool commandPool, vk::Queue graphicsQueue, vk::Device device)
+ void te::vkh::VulkanDevice::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height, vk::CommandPool commandPool, vk::Queue graphicsQueue)
  {
-     vk::CommandBuffer commandBuffer = te::vkh::VulkanHelper::beginSingleTimeCommands(commandPool, device);
+     vk::CommandBuffer commandBuffer = te::vkh::VulkanDevice::beginSingleTimeCommands(commandPool);
 
      vk::BufferImageCopy region{};
      region.bufferOffset = 0;
@@ -500,5 +489,5 @@ void te::vkh::VulkanHelper::createBuffer(
     
      commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, 1, &region);
 
-     te::vkh::VulkanHelper::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool, device);
+     te::vkh::VulkanDevice::endSingleTimeCommands(commandBuffer, graphicsQueue, commandPool);
  }

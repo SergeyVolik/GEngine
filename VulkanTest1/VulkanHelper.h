@@ -86,7 +86,150 @@ namespace te
 					throw std::runtime_error("Could not find a matching memory type");
 				}
 			}
+
+			void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory)
+			{
+				vk::ImageCreateInfo imageInfo{};
+
+				imageInfo.imageType = vk::ImageType::e2D;
+				imageInfo.extent.width = width;
+				imageInfo.extent.height = height;
+				imageInfo.extent.depth = 1;
+				imageInfo.mipLevels = mipLevels;
+				imageInfo.arrayLayers = 1;
+				imageInfo.format = format;
+				imageInfo.tiling = tiling;
+				imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+				imageInfo.usage = usage;
+				imageInfo.samples = vk::SampleCountFlagBits::e1;
+				imageInfo.sharingMode = vk::SharingMode::eExclusive;
+
+				if (logicalDevice.createImage(&imageInfo, nullptr, &image) != vk::Result::eSuccess) {
+					throw std::runtime_error("failed to create image!");
+				}
+
+				vk::MemoryRequirements memRequirements = logicalDevice.getImageMemoryRequirements(image);
+
+
+				vk::MemoryAllocateInfo allocInfo{};
+
+				allocInfo.allocationSize = memRequirements.size;
+				vk::Bool32 result;
+				allocInfo.memoryTypeIndex = getMemoryType(memRequirements.memoryTypeBits, properties, &result);
+
+
+				if (logicalDevice.allocateMemory(&allocInfo, nullptr, &imageMemory) != vk::Result::eSuccess) {
+					throw std::runtime_error("failed to allocate image memory!");
+				}
+				logicalDevice.bindImageMemory(image, imageMemory, 0);
+
+			}
+			vk::ShaderModule createShaderModule(const std::vector<char>& code);
+
+			vk::CommandBuffer beginSingleTimeCommands(
+				vk::CommandPool commandPool
+				
+			);
+
+			void endSingleTimeCommands(
+				vk::CommandBuffer commandBuffer,
+				vk::Queue graphicsQueue,
+				vk::CommandPool commandPool
+				
+			);
+
+			void copyBuffer(
+				vk::Buffer srcBuffer,
+				vk::Buffer dstBuffer,
+				vk::DeviceSize size,
+				vk::Queue graphicsQueue,
+				vk::CommandPool commandPool
+				
+			);
+
+			vk::Bool32 formatIsFilterable(vk::Format format, vk::ImageTiling tiling);
+
+			void insertImageMemoryBarrier(
+				vk::CommandBuffer cmdbuffer,
+				vk::Image image,
+				vk::AccessFlags srcAccessMask,
+				vk::AccessFlags dstAccessMask,
+				vk::ImageLayout oldImageLayout,
+				vk::ImageLayout newImageLayout,
+				vk::PipelineStageFlags srcStageMask,
+				vk::PipelineStageFlags dstStageMask,
+				vk::ImageSubresourceRange subresourceRange
+			);
+
+			void setImageLayout(vk::CommandBuffer cmdbuffer,
+				vk::Image image, vk::ImageLayout oldImageLayout,
+				vk::ImageLayout newImageLayout, vk::ImageSubresourceRange subresourceRange,
+				vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
+
+			void setImageLayout(vk::CommandBuffer cmdbuffer,
+				vk::Image image, vk::ImageAspectFlags aspectMask, vk::ImageLayout oldImageLayout,
+				vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
+				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
+
+
+			void createVertexBuffer(
+				std::vector<te::Vertex> vertices,
+				vk::Buffer& vertexBuffer,
+				vk::DeviceMemory& vertexBufferMemory,
+				vk::CommandPool commandPool,
+				vk::Queue graphicsQueue
+
+			);
+
+			void createIndexBuffer(
+				std::vector<uint32_t> indices,
+				vk::Buffer& indexBuffer,
+				vk::DeviceMemory& indexBufferMemory,
+				vk::CommandPool commandPool,
+				vk::Queue graphicsQueue
+
+			);
+
+
+
+			void createBuffer(
+				vk::DeviceSize size,
+				vk::BufferUsageFlags usage,
+				vk::MemoryPropertyFlags properties,
+				vk::Buffer& buffer,
+				vk::DeviceMemory& bufferMemory
+				
+			);
+
+
+
+			uint32_t findMemoryType(
+				uint32_t typeFilter,
+				vk::MemoryPropertyFlags properties
+			);
+
+			void copyBufferToImage(
+				vk::Buffer buffer,
+				vk::Image image,
+				uint32_t width,
+				uint32_t height,
+				vk::CommandPool commandPool,
+				vk::Queue graphicsQueue
+			);
+
+			vk::ImageView createImageView(
+				vk::Image image,
+				vk::Format format,
+				vk::ImageAspectFlags aspectFlags,
+				uint32_t mipLevels
+			);
+
+			
 		};
+
+		
+		
 
 		struct QueueFamilyIndices {
 			std::optional<uint32_t> graphicsFamily;
@@ -97,122 +240,14 @@ namespace te
 			}
 		};
 
-		class VulkanHelper
-		{
+		te::vkh::QueueFamilyIndices findQueueFamilies(
+			vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice
+		);
 
+		te::vkh::SwapChainSupportDetails querySwapChainSupport(
+			vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice
+		);
 
-		public:
-
-			static vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char>& code);
-
-			static vk::CommandBuffer beginSingleTimeCommands(
-				vk::CommandPool commandPool,
-				vk::Device device
-			);
-
-			static void endSingleTimeCommands(
-				vk::CommandBuffer commandBuffer,
-				vk::Queue graphicsQueue,
-				vk::CommandPool commandPool,
-				vk::Device device
-			);
-
-			static void copyBuffer(
-				vk::Buffer srcBuffer,
-				vk::Buffer dstBuffer,
-				vk::DeviceSize size,
-				vk::Queue graphicsQueue,
-				vk::CommandPool commandPool,
-				vk::Device device
-			);
-
-			static vk::Bool32 formatIsFilterable(vk::PhysicalDevice physicalDevice, vk::Format format, vk::ImageTiling tiling);
-
-			static void insertImageMemoryBarrier(vk::CommandBuffer cmdbuffer, vk::Image image, vk::AccessFlags srcAccessMask, vk::AccessFlags dstAccessMask, vk::ImageLayout oldImageLayout, vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask, vk::ImageSubresourceRange subresourceRange);
-
-			static void setImageLayout(vk::CommandBuffer cmdbuffer,
-				vk::Image image, vk::ImageLayout oldImageLayout,
-				vk::ImageLayout newImageLayout, vk::ImageSubresourceRange subresourceRange,
-				vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
-				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
-
-			static void setImageLayout(vk::CommandBuffer cmdbuffer,
-				vk::Image image, vk::ImageAspectFlags aspectMask, vk::ImageLayout oldImageLayout,
-				vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
-				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
-
-
-			static void createVertexBuffer(
-				std::vector<te::Vertex> vertices,
-				vk::Buffer& vertexBuffer,
-				vk::DeviceMemory& vertexBufferMemory,
-				vk::CommandPool commandPool,
-				vk::Queue graphicsQueue,
-				vk::PhysicalDevice phisycalDevice,
-				vk::Device device
-			);
-
-			static void createIndexBuffer(
-				std::vector<uint32_t> indices,
-				vk::Buffer& indexBuffer,
-				vk::DeviceMemory& indexBufferMemory,
-				vk::CommandPool commandPool,
-				vk::Queue graphicsQueue,
-				vk::PhysicalDevice phisycalDevice,
-				vk::Device device
-			);
-
-
-
-			static void createBuffer(
-				vk::DeviceSize size,
-				vk::BufferUsageFlags usage,
-				vk::MemoryPropertyFlags properties,
-				vk::Buffer& buffer,
-				vk::DeviceMemory& bufferMemory,
-				vk::PhysicalDevice phisycalDevice,
-				vk::Device device
-			);
-
-
-
-			static uint32_t findMemoryType(
-				uint32_t typeFilter,
-				vk::MemoryPropertyFlags properties,
-				vk::PhysicalDevice physicalDevice
-			);
-
-			static void copyBufferToImage(
-				vk::Buffer buffer,
-				vk::Image image,
-				uint32_t width,
-				uint32_t height,
-				vk::CommandPool commandPool,
-				vk::Queue graphicsQueue,
-				vk::Device device
-			);
-
-			static vk::ImageView createImageView(
-				vk::Image image,
-				vk::Format format,
-				vk::ImageAspectFlags aspectFlags,
-				uint32_t mipLevels,
-				vk::Device device
-			);
-
-			static QueueFamilyIndices findQueueFamilies(
-				vk::PhysicalDevice device,
-				vk::SurfaceKHR surface
-			);
-
-			static te::vkh::SwapChainSupportDetails querySwapChainSupport(
-				vk::PhysicalDevice physicalDevice,
-				vk::SurfaceKHR surface
-			);
-			
-
-			
-		};
 	}
 	
 		
