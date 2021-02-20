@@ -19,52 +19,65 @@ namespace te
 
 		class VulkanDevice
 		{
-			vk::PhysicalDeviceProperties properties;
-			/** @brief Features of the physical device that an application can use to check if a feature is supported */
-			vk::PhysicalDeviceFeatures features;
-			/** @brief Features that have been enabled for use on the physical device */
-			vk::PhysicalDeviceFeatures enabledFeatures;
-			/** @brief Memory types and heaps of the physical device */
-			vk::PhysicalDeviceMemoryProperties memoryProperties;
+			
 
-			/** @brief List of extensions supported by the device */
-			std::vector<std::string> supportedExtensions;
+		
 		public:
 			vk::Device logicalDevice;
 			vk::PhysicalDevice physicalDevice;
 			vk::Instance instance;
+			vk::CommandPool commandPool;
+			std::vector<vk::CommandBuffer> commandBuffers;
+
+			struct {
+				vk::PhysicalDeviceProperties properties;
+				/** @brief Features of the physical device that an application can use to check if a feature is supported */
+				vk::PhysicalDeviceFeatures features;
+				/** @brief Features that have been enabled for use on the physical device */
+				vk::PhysicalDeviceFeatures enabledFeatures;
+				/** @brief Memory types and heaps of the physical device */
+				vk::PhysicalDeviceMemoryProperties memoryProperties;
+
+				/** @brief List of extensions supported by the device */
+				std::vector<std::string> supportedExtensions;
+			} info;
 
 			VulkanDevice(vk::Device logicalDevice,
 				vk::PhysicalDevice physicalDevice,
 				vk::Instance instance) : logicalDevice(logicalDevice), physicalDevice(physicalDevice), instance(instance)
 			{
-				// Store Properties features, limits and properties of the physical device for later use
-		        // Device properties also contain limits and sparse properties
-				physicalDevice.getProperties(&properties);
-				// Features should be checked by the examples before using them
-				physicalDevice.getFeatures(&features);
-				// Memory properties are used regularly for creating all kinds of buffers
+				setupPhysicalDevice(physicalDevice);
 			
-				physicalDevice.getMemoryProperties(&memoryProperties);
-
-				uint32_t extCount = 0;
-
-				 auto extentions = physicalDevice.enumerateDeviceExtensionProperties();
-
-				 for (auto const ext : extentions)
-					 supportedExtensions.push_back(ext.extensionName);
 				
 			}
 			VulkanDevice() : logicalDevice(), physicalDevice(), instance() {}
 
+			void setupPhysicalDevice(vk::PhysicalDevice physicalDevice)
+			{
+				this->physicalDevice = physicalDevice;
+				// Store Properties features, limits and properties of the physical device for later use
+				// Device properties also contain limits and sparse properties
+				physicalDevice.getProperties(&info.properties);
+				// Features should be checked by the examples before using them
+				physicalDevice.getFeatures(&info.features);
+				// Memory properties are used regularly for creating all kinds of buffers
 
+				physicalDevice.getMemoryProperties(&info.memoryProperties);
+
+				uint32_t extCount = 0;
+
+				auto extentions = physicalDevice.enumerateDeviceExtensionProperties();
+
+				for (const auto& ext : extentions)
+					info.supportedExtensions.push_back(ext.extensionName);
+			}
 			uint32_t getMemoryType(uint32_t typeBits, vk::MemoryPropertyFlags properties, vk::Bool32* memTypeFound) const
 			{
-				for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
+				for (uint32_t i = 0; i < info.memoryProperties.memoryTypeCount; i++)
 				{
 					if ((typeBits & 1) == 1)
 					{
-						if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+						if ((info.memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
 						{
 							if (memTypeFound)
 							{
@@ -168,9 +181,11 @@ namespace te
 				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
 
 			void setImageLayout(vk::CommandBuffer cmdbuffer,
-				vk::Image image, vk::ImageAspectFlags aspectMask, vk::ImageLayout oldImageLayout,
+				vk::Image image, uint32_t mipLevels, vk::ImageAspectFlags aspectMask, vk::ImageLayout oldImageLayout,
 				vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
 				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
+
+			void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels, vk::Queue graphicQueue);
 
 
 			void createVertexBuffer(

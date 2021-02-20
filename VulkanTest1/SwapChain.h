@@ -24,6 +24,7 @@ namespace vkGame {
         //поверхность для выводна на екран
       
         vk::SurfaceKHR surface;
+
         te::vkh::SwapChainSupportDetails details;
        
         // дескриптов для дувойной-тройной буферизации
@@ -199,7 +200,7 @@ namespace vkGame {
             {
                 if (framebuffers[0]->attachments[i].uniqueAttachment)
                 {
-                    auto attachment = framebuffers[0]->attachments[i];
+                    const auto& attachment = framebuffers[0]->attachments[i];
 
                         
                     device->logicalDevice.destroyImage(attachment.image);

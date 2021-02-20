@@ -166,6 +166,8 @@
     <ClCompile Include="..\external\ktx\lib\swap.c" />
     <ClCompile Include="..\external\ktx\lib\texture.c" />
     <ClCompile Include="AssetsLoader.cpp" />
+    <ClCompile Include="TextureDatabase.cpp" />
+    <ClCompile Include="TextureDatabase.h" />
     <ClCompile Include="VulkanBuffer.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FileReader.cpp" />

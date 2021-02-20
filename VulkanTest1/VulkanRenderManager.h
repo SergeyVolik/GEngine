@@ -46,6 +46,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include "Renderer.h"
 #include "VulkanHelper.h"
 #include "SwapChain.h"
+#include "VulkanTexture.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -93,13 +94,7 @@ namespace te
 
         vkGame::VulkanSwapChain* mySwapChain;
         te::vkh::VulkanDevice* vulkanDevice;
-
-        vk::PhysicalDeviceProperties deviceProperties;
-        // Stores the features available on the selected physical device (for e.g. checking if a feature is available)
-        vk::PhysicalDeviceFeatures deviceFeatures;
-        // Stores all available memory (type) properties for the physical device
-        vk::PhysicalDeviceMemoryProperties deviceMemoryProperties;
-
+        ::vkh::Texture2D* texture;
 
         //дескриптор дебаг мессенджера библиотеки вулкан
         vk::DebugUtilsMessengerEXT debugMessenger;   
@@ -129,8 +124,7 @@ namespace te
         vk::DescriptorSetLayout descriptorSetLayout;
         vk::PipelineLayout pipelineLayout;
         vk::Pipeline graphicsPipeline;
-        vk::PipelineCache pipelineCache;
-        vk::CommandPool commandPool;
+        vk::PipelineCache pipelineCache;     
         //vk::CommandPool transferCommandPool;
         //очередь команд для вычисления елементов графики
 
@@ -146,16 +140,6 @@ namespace te
 
         //презентационная очередь для отображения на поверхность  SurfaceKHR
      
-       /* vk::Image depthImage;
-        vk::DeviceMemory depthImageMemory;
-        vk::ImageView depthImageView;*/
-
-        uint32_t mipLevels;
-        vk::Image textureImage;
-        vk::DeviceMemory textureImageMemory;
-        vk::ImageView textureImageView;
-        vk::Sampler textureSampler;
-
         std::vector<te::Vertex> vertices;
         std::vector<uint32_t> _indices;
         vk::Buffer vertexBuffer;
@@ -170,7 +154,6 @@ namespace te
 
         std::vector<vk::DescriptorSet> descriptorSets;
 
-        std::vector<vk::CommandBuffer> commandBuffers;
 
         size_t currentFrame = 0;     
 
@@ -202,9 +185,6 @@ namespace te
         void createCommandPool();
         void createDepthResources();
         void createFramebuffers();
-        void createTextureImage(vk::Image&, uint32_t&);
-        void createTextureImageView(vk::ImageView& imgView, const vk::Image textureImage, const uint32_t mipLevels);
-        void createTextureSampler();
 
         ///загрузку модели нужно вынести в загрузку ресурсов
         void loadModel();
@@ -223,12 +203,6 @@ namespace te
         void createPipelineCache();
         void updateUniformBuffer(uint32_t currentImage);
       
-
-        void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-        void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
-        
-    
-       
        
         void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
         std::vector<const char*> getRequiredExtensions();

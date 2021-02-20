@@ -58,7 +58,7 @@ void te::VulkanRenderManager::createInstance()
 #pragma endregion
 
 
-#pragma region selection  vulkanDevice->logicalDevice
+#pragma region selection vulkanDevice->logicalDevice
 
 void te::VulkanRenderManager::pickPhysicalDevice()
 {
@@ -67,7 +67,8 @@ void te::VulkanRenderManager::pickPhysicalDevice()
 
     for (const auto& pDevice : devices) {
         if (isDeviceSuitable(pDevice)) {
-            vulkanDevice->physicalDevice = pDevice;
+            vulkanDevice->setupPhysicalDevice(pDevice);
+           
             break;
         }
     }
@@ -76,9 +77,6 @@ void te::VulkanRenderManager::pickPhysicalDevice()
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 
-     vulkanDevice->physicalDevice.getProperties(&deviceProperties);
-     vulkanDevice->physicalDevice.getFeatures(&deviceFeatures);
-     vulkanDevice->physicalDevice.getMemoryProperties(&deviceMemoryProperties);
 
 }
 
@@ -169,10 +167,12 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
     instance->createDepthResources();
 
    
+    instance->texture = new ::vkh::Texture2D(instance->vulkanDevice);
+    instance->texture->loadFromFile(TEXTURE_PATH, vk::Format::eR8G8B8A8Srgb, instance->vulkanQueues.graphicsQueue);
 
-    instance->createTextureImage(instance->textureImage, instance->mipLevels);
+   /* instance->createTextureImage(instance->textureImage, instance->mipLevels);
     instance->createTextureImageView(instance->textureImageView, instance->textureImage, instance->mipLevels);
-    instance->createTextureSampler();
+    instance->createTextureSampler();*/
     instance->loadModel();
     instance->gObject = new Entity();
     instance->gTransform = (Transform*)instance->gObject->getComponent(typeid(Transform).hash_code());
@@ -203,10 +203,14 @@ void te::VulkanRenderManager::terminate()
     instance->cleanupSwapChain();
 
     // удаление даных о текстуре в  GPU
-    instance-> vulkanDevice->logicalDevice.destroySampler(instance->textureSampler, nullptr);
+
+    delete instance->texture;
+
+   /* instance-> vulkanDevice->logicalDevice.destroySampler(instance->textureSampler, nullptr);
     instance-> vulkanDevice->logicalDevice.destroyImageView(instance->textureImageView, nullptr);
     instance-> vulkanDevice->logicalDevice.destroyImage(instance->textureImage, nullptr);
-    instance-> vulkanDevice->logicalDevice.freeMemory(instance->textureImageMemory, nullptr);
+    instance-> vulkanDevice->logicalDevice.freeMemory(instance->textureImageMemory, nullptr);*/
+
 
 
     instance-> vulkanDevice->logicalDevice.destroyDescriptorSetLayout(instance->descriptorSetLayout, nullptr);
@@ -224,7 +228,7 @@ void te::VulkanRenderManager::terminate()
     }
 
     instance-> vulkanDevice->logicalDevice.destroyPipelineCache(instance->pipelineCache, nullptr);
-    instance-> vulkanDevice->logicalDevice.destroyCommandPool(instance->commandPool, nullptr);
+    instance-> vulkanDevice->logicalDevice.destroyCommandPool(instance->vulkanDevice->commandPool, nullptr);
 
     instance-> vulkanDevice->logicalDevice.destroy();
 
@@ -458,7 +462,7 @@ void te::VulkanRenderManager::createCommandPool()
    
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
     poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer; // для сброса всех команд просле прохода рендеринга
-    if ( vulkanDevice->logicalDevice.createCommandPool(&poolInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.createCommandPool(&poolInfo, nullptr, &vulkanDevice->commandPool) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics command pool!");
     }
 }
@@ -538,265 +542,6 @@ void te::VulkanRenderManager::createFramebuffers()
     mySwapChain->createFramebuffers();
     
 }
-
-#pragma region Load texture to gpu
-
-
-void te::VulkanRenderManager::createTextureImage(vk::Image& textureImage, uint32_t& mipLevels)
-{
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    vk::DeviceSize imageSize = texWidth * texHeight * 4;
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    vk::Buffer stagingBuffer;
-    vk::DeviceMemory stagingBufferMemory;
-     vulkanDevice->createBuffer(
-        imageSize,
-        vk::BufferUsageFlagBits::eTransferSrc,
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-        stagingBuffer, stagingBufferMemory);
-
-    void* data;
-     vulkanDevice->logicalDevice.mapMemory(stagingBufferMemory, 0, imageSize, {}, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-     vulkanDevice->logicalDevice.unmapMemory(stagingBufferMemory);
-
-    stbi_image_free(pixels);
-
-    vulkanDevice->createImage(
-        texWidth, texHeight, mipLevels,
-        vk::Format::eR8G8B8A8Srgb,
-        vk::ImageTiling::eOptimal,
-        vk::ImageUsageFlagBits::eTransferSrc |
-        vk::ImageUsageFlagBits::eTransferDst |
-        vk::ImageUsageFlagBits::eSampled,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        textureImage, textureImageMemory
-    );
-
-
-    transitionImageLayout(
-        textureImage,
-        vk::Format::eR8G8B8A8Srgb,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eTransferDstOptimal,
-        mipLevels
-    );
-
-     vulkanDevice->copyBufferToImage(
-        stagingBuffer,
-        textureImage,
-        static_cast<uint32_t>(texWidth),
-        static_cast<uint32_t>(texHeight),
-        commandPool,
-        vulkanQueues.graphicsQueue
-    );
-   
-    vkDestroyBuffer( vulkanDevice->logicalDevice, stagingBuffer, nullptr);
-    vkFreeMemory( vulkanDevice->logicalDevice, stagingBufferMemory, nullptr);
-
-    generateMipmaps(
-        textureImage,
-        vk::Format::eR8G8B8A8Srgb,
-        texWidth,
-        texHeight,
-        mipLevels
-    );
-}
-
-void te::VulkanRenderManager::createTextureImageView(vk::ImageView& imgView, const vk::Image textureImage, const uint32_t mipLevels)
-{
-    imgView =  vulkanDevice->createImageView(
-        textureImage,
-        vk::Format::eR8G8B8A8Srgb,
-        vk::ImageAspectFlagBits::eColor,
-        mipLevels
-    );
-}
-
-void te::VulkanRenderManager::createTextureSampler()
-{
-    vk::PhysicalDeviceProperties properties = deviceProperties;
-
-
-    vk::SamplerCreateInfo samplerInfo{};
-  
-    samplerInfo.magFilter = vk::Filter::eLinear;
-    samplerInfo.minFilter = vk::Filter::eLinear;
-    samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-    samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-    samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = vk::CompareOp::eAlways;;
-    samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;;
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = static_cast<float>(mipLevels);
-    samplerInfo.mipLodBias = 0.0f;
-
-    if ( vulkanDevice->logicalDevice.createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-}
-
-void te::VulkanRenderManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
-{
-    vk::FormatProperties formatProperties =  vulkanDevice->physicalDevice.getFormatProperties(imageFormat);  
-
-    if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
-        throw std::runtime_error("texture image format does not support linear blitting!");
-    }
-
-    vk::CommandBuffer commandBuffer =  vulkanDevice->beginSingleTimeCommands(commandPool);
-
-    vk::ImageMemoryBarrier barrier{};
- 
-    barrier.image = image;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    barrier.subresourceRange.levelCount = 1;
-
-    int32_t mipWidth = texWidth;
-    int32_t mipHeight = texHeight;
-
-    for (uint32_t i = 1; i < mipLevels; i++) {
-        barrier.subresourceRange.baseMipLevel = i - 1;
-        barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-        barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-        barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
-
-        commandBuffer.pipelineBarrier(
-            vk::PipelineStageFlagBits::eTransfer,
-            vk::PipelineStageFlagBits::eTransfer,
-            {}, 0, nullptr, 0,  nullptr, 1, &barrier
-                
-        );
-
-        vk::ImageBlit blit{};
-        blit.srcOffsets[0] = vk::Offset3D{ 0, 0, 0 };
-        blit.srcOffsets[1] = vk::Offset3D{ mipWidth, mipHeight, 1 };
-        blit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor; ;
-        blit.srcSubresource.mipLevel = i - 1;
-        blit.srcSubresource.baseArrayLayer = 0;
-        blit.srcSubresource.layerCount = 1;
-        blit.dstOffsets[0] = vk::Offset3D{ 0, 0, 0 };
-        blit.dstOffsets[1] = vk::Offset3D{ mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
-        blit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-        blit.dstSubresource.mipLevel = i;
-        blit.dstSubresource.baseArrayLayer = 0;
-        blit.dstSubresource.layerCount = 1;
-
-        commandBuffer.blitImage(
-            image, vk::ImageLayout::eTransferSrcOptimal,
-            image, vk::ImageLayout::eTransferDstOptimal,
-            1, &blit, vk::Filter::eLinear
-        );
-
-
-
-        barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
-        barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-    
-
-        commandBuffer.pipelineBarrier(
-            vk::PipelineStageFlagBits::eTransfer,
-            vk::PipelineStageFlagBits::eFragmentShader,
-            {},
-            0, nullptr, 0, nullptr, 1, &barrier
-
-        );
-
-        if (mipWidth > 1) mipWidth /= 2;
-        if (mipHeight > 1) mipHeight /= 2;
-    }
-
-    barrier.subresourceRange.baseMipLevel = mipLevels - 1;
-    barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal; 
-    barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite; 
-    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-
-    commandBuffer.pipelineBarrier(
-        vk::PipelineStageFlagBits::eTransfer,
-        vk::PipelineStageFlagBits::eFragmentShader,
-        {}, 0, nullptr, 0, nullptr, 1, &barrier
-    );
-
-     vulkanDevice->endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool);
-}
-
-void te::VulkanRenderManager::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels)
-{
-    vk::CommandBuffer commandBuffer =  vulkanDevice->beginSingleTimeCommands(commandPool);
-
-    vk::ImageMemoryBarrier barrier{};
-   
-    barrier.oldLayout = oldLayout;
-    barrier.newLayout = newLayout;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = mipLevels;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
-    vk::PipelineStageFlags sourceStage;
-    vk::PipelineStageFlags destinationStage;
-
-    if (oldLayout == vk::ImageLayout::eUndefined &&
-        newLayout == vk::ImageLayout::eTransferDstOptimal) {
-        barrier.srcAccessMask = {}; 
-        barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-
-        sourceStage = vk::PipelineStageFlagBits::eTopOfPipe; 
-        destinationStage = vk::PipelineStageFlagBits::eTransfer;
-    }
-    else if (oldLayout == vk::ImageLayout::eTransferDstOptimal &&
-        newLayout == vk::ImageLayout::eShaderReadOnlyOptimal) {
-        barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-        barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-        sourceStage = vk::PipelineStageFlagBits::eTransfer;
-        destinationStage = vk::PipelineStageFlagBits::eFragmentShader;;
-    }
-    else {
-        throw std::invalid_argument("unsupported layout transition!");
-    }
-
-    commandBuffer.pipelineBarrier(
-        sourceStage,
-        destinationStage,
-        {},
-        0, nullptr, 0, nullptr, 1, &barrier
-
-    );
-
-     vulkanDevice->endSingleTimeCommands(commandBuffer, vulkanQueues.graphicsQueue, commandPool);
-}
-
-
-
-
-
-#pragma endregion
-
 
 
 
@@ -882,8 +627,8 @@ void te::VulkanRenderManager::createDescriptorSets()
 
         vk::DescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-        imageInfo.imageView = textureImageView;
-        imageInfo.sampler = textureSampler;
+        imageInfo.imageView = texture->textureImageView;
+        imageInfo.sampler = texture->textureSampler;
 
         std::array<vk::WriteDescriptorSet, 2> descriptorWrites{};
 
@@ -907,21 +652,21 @@ void te::VulkanRenderManager::createDescriptorSets()
 
 void te::VulkanRenderManager::createCommandBuffers()
 {
-    commandBuffers.resize(mySwapChain->getChainsCount());
+    vulkanDevice->commandBuffers.resize(mySwapChain->getChainsCount());
 
     vk::CommandBufferAllocateInfo allocInfo{};
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = vulkanDevice->commandPool;
     allocInfo.level = vk::CommandBufferLevel::ePrimary;
-    allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+    allocInfo.commandBufferCount = (uint32_t)vulkanDevice->commandBuffers.size();
 
-    if ( vulkanDevice->logicalDevice.allocateCommandBuffers(&allocInfo, commandBuffers.data()) != vk::Result::eSuccess) {
+    if ( vulkanDevice->logicalDevice.allocateCommandBuffers(&allocInfo, vulkanDevice->commandBuffers.data()) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
-    for (size_t i = 0; i < commandBuffers.size(); i++) {
+    for (size_t i = 0; i < vulkanDevice->commandBuffers.size(); i++) {
         vk::CommandBufferBeginInfo beginInfo{};
 
-        if (commandBuffers[i].begin(&beginInfo) != vk::Result::eSuccess) {
+        if (vulkanDevice->commandBuffers[i].begin(&beginInfo) != vk::Result::eSuccess) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
@@ -938,25 +683,25 @@ void te::VulkanRenderManager::createCommandBuffers()
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
-        commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
+        vulkanDevice->commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
 
-        commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+        vulkanDevice->commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
         vk::Buffer vertexBuffers[] = { vertexBuffer };
         vk::DeviceSize offsets[] = { 0 };
 
-        commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+        vulkanDevice->commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-        commandBuffers[i].bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint32);
+        vulkanDevice->commandBuffers[i].bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint32);
         
-        commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+        vulkanDevice->commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
-        commandBuffers[i].drawIndexed(static_cast<uint32_t>(_indices.size()), 1, 0, 0, 0);
+        vulkanDevice->commandBuffers[i].drawIndexed(static_cast<uint32_t>(_indices.size()), 1, 0, 0, 0);
 
-        vkCmdEndRenderPass(commandBuffers[i]);
+        vkCmdEndRenderPass(vulkanDevice->commandBuffers[i]);
 
         
-        commandBuffers[i].end();
+        vulkanDevice->commandBuffers[i].end();
 
     }
 }
@@ -1016,11 +761,6 @@ void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
      vulkanDevice->logicalDevice.unmapMemory(uniformBuffersMemory[currentImage]);
 }
 
-
-
-
-
-
 void te::VulkanRenderManager::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
 {
     createInfo = vk::DebugUtilsMessengerCreateInfoEXT{};
@@ -1067,12 +807,6 @@ bool te::VulkanRenderManager::isDeviceSuitable(vk::PhysicalDevice physicalDevice
    
     return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
-
-
-
-
-
-
 
 bool te::VulkanRenderManager::checkDeviceExtensionSupport(vk::PhysicalDevice  physicalDevice)
 {
@@ -1171,7 +905,7 @@ void te::VulkanRenderManager::createVertexBuffer(std::vector<te::Vertex> vertice
         vertices,
         vertexBuffer,
         vertexBufferMemory,
-        instance->commandPool,
+        instance->vulkanDevice->commandPool,
         instance->vulkanQueues.graphicsQueue      
     );
 }
@@ -1182,7 +916,7 @@ void te::VulkanRenderManager::createIndexBuffer(std::vector<uint32_t> indices, v
         indices,
         indexBuffer,
         indexBufferMemory,
-        instance->commandPool,
+        instance->vulkanDevice->commandPool,
         instance->vulkanQueues.graphicsQueue
     );
 }
@@ -1219,7 +953,7 @@ void te::VulkanRenderManager::cleanupSwapChain()
 {
 
 
-     vulkanDevice->logicalDevice.freeCommandBuffers(commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+     vulkanDevice->logicalDevice.freeCommandBuffers(vulkanDevice->commandPool, static_cast<uint32_t>(vulkanDevice->commandBuffers.size()), vulkanDevice->commandBuffers.data());
 
      mySwapChain->destroyFramebuffers();
 
@@ -1271,7 +1005,7 @@ void te::VulkanRenderManager::drawFrame()
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &vulkanDevice->commandBuffers[imageIndex];
 
     vk::Semaphore signalSemaphores[] = { synch.renderFinishedSemaphores[currentFrame] };
     submitInfo.signalSemaphoreCount = 1;
