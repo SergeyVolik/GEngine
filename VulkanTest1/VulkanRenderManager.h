@@ -54,6 +54,8 @@ const uint32_t HEIGHT = 600;
 const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
 
+
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 #ifdef NDEBUG
@@ -95,10 +97,15 @@ namespace te
         vkGame::VulkanSwapChain* mySwapChain;
         te::vkh::VulkanDevice* vulkanDevice;
         ::vkh::Texture2D* texture;
+        ::vkh::TextureCubeMap* skybox;
 
         //дескриптор дебаг мессенджера библиотеки вулкан
         vk::DebugUtilsMessengerEXT debugMessenger;   
-        
+        std::vector<std::string> skyboxPaths{
+        "textures/skybox/negx.jpg","textures/skybox/negy.jpg",
+        "textures/skybox/negz.jpg", "textures/skybox/posx.jpg",
+        "textures/skybox/posy.jpg", "textures/skybox/posz.jpg",
+            };
 
         //-------------------------------------------- синхронизация двойной буферизации------------------------------
 

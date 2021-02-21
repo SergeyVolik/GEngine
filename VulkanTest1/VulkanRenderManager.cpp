@@ -168,8 +168,9 @@ void te::VulkanRenderManager::initialize(te::Window* wnd) {
 
    
     instance->texture = new ::vkh::Texture2D(instance->vulkanDevice);
+    instance->skybox = new ::vkh::TextureCubeMap(instance->vulkanDevice);
     instance->texture->loadFromFile(TEXTURE_PATH, vk::Format::eR8G8B8A8Srgb, instance->vulkanQueues.graphicsQueue);
-
+    instance->skybox->loadFromFile(instance->skyboxPaths, vk::Format::eR8G8B8A8Srgb, instance->vulkanQueues.graphicsQueue);
    /* instance->createTextureImage(instance->textureImage, instance->mipLevels);
     instance->createTextureImageView(instance->textureImageView, instance->textureImage, instance->mipLevels);
     instance->createTextureSampler();*/
@@ -205,7 +206,7 @@ void te::VulkanRenderManager::terminate()
     // удаление даных о текстуре в  GPU
 
     delete instance->texture;
-
+    delete instance->skybox;
    /* instance-> vulkanDevice->logicalDevice.destroySampler(instance->textureSampler, nullptr);
     instance-> vulkanDevice->logicalDevice.destroyImageView(instance->textureImageView, nullptr);
     instance-> vulkanDevice->logicalDevice.destroyImage(instance->textureImage, nullptr);

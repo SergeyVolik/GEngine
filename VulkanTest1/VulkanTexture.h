@@ -56,6 +56,7 @@ namespace vkh
 			createTextureImage();
 			createTextureImageView();
 			createTextureSampler();
+			updateDescriptor();
 		};
 
 	};
@@ -81,17 +82,25 @@ namespace vkh
 		
 	};
 
-		/*class TextureCubeMap : public Texture
+	class TextureCubeMap : public Texture
 	{
+	private:
+		std::vector<std::string> pathsOfImages;
+
+	protected:
+		void createTextureImage() override;
+		void createTextureImageView() override;
+		void createTextureSampler() override;
 	public:
+		TextureCubeMap(te::vkh::VulkanDevice* device) : Texture(device) {};
+	
 		void loadFromFile(
-			std::string        filename,
+			std::vector<std::string>,
 			vk::Format           format,
-			te::vkh::VulkanDevice* device,
 			vk::Queue            copyQueue,
 			vk::ImageUsageFlags  imageUsageFlags = vk::ImageUsageFlagBits::eSampled,
 			vk::ImageLayout      imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal);
-	};*/
+	};
 }
 
 

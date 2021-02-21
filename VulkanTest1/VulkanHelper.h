@@ -100,7 +100,7 @@ namespace te
 				}
 			}
 
-			void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory)
+			void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory, uint32_t arrayLayers = 1, vk::ImageCreateFlags imageCreateFlags = {})
 			{
 				vk::ImageCreateInfo imageInfo{};
 
@@ -109,11 +109,14 @@ namespace te
 				imageInfo.extent.height = height;
 				imageInfo.extent.depth = 1;
 				imageInfo.mipLevels = mipLevels;
-				imageInfo.arrayLayers = 1;
+				imageInfo.arrayLayers = arrayLayers;
 				imageInfo.format = format;
 				imageInfo.tiling = tiling;
 				imageInfo.initialLayout = vk::ImageLayout::eUndefined;
 				imageInfo.usage = usage;
+
+				imageInfo.flags = imageCreateFlags;
+
 				imageInfo.samples = vk::SampleCountFlagBits::e1;
 				imageInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -182,10 +185,12 @@ namespace te
 
 			void setImageLayout(vk::CommandBuffer cmdbuffer,
 				vk::Image image, uint32_t mipLevels, vk::ImageAspectFlags aspectMask, vk::ImageLayout oldImageLayout,
-				vk::ImageLayout newImageLayout, vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
+				vk::ImageLayout newImageLayout, uint32_t layerCount = 1, vk::PipelineStageFlags srcStageMask = vk::PipelineStageFlagBits::eAllCommands,
 				vk::PipelineStageFlags dstStageMask = vk::PipelineStageFlagBits::eAllCommands);
 
 			void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels, vk::Queue graphicQueue);
+
+			void generateMipmapsForCubmap(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels, vk::Queue graphicsQueue);
 
 
 			void createVertexBuffer(
