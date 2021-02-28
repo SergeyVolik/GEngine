@@ -97,14 +97,14 @@ namespace te
         vkGame::VulkanSwapChain* mySwapChain;
         te::vkh::VulkanDevice* vulkanDevice;
         ::vkh::Texture2D* texture;
-        ::vkh::TextureCubeMap* skybox;
+        
 
         //дескриптор дебаг мессенджера библиотеки вулкан
         vk::DebugUtilsMessengerEXT debugMessenger;   
         std::vector<std::string> skyboxPaths{
-        "textures/skybox/negx.jpg","textures/skybox/negy.jpg",
-        "textures/skybox/negz.jpg", "textures/skybox/posx.jpg",
-        "textures/skybox/posy.jpg", "textures/skybox/posz.jpg",
+            "textures/skybox/negx.jpg","textures/skybox/negy.jpg",
+            "textures/skybox/negz.jpg", "textures/skybox/posx.jpg",
+            "textures/skybox/posy.jpg", "textures/skybox/posz.jpg",
             };
 
         //-------------------------------------------- синхронизация двойной буферизации------------------------------
@@ -126,11 +126,59 @@ namespace te
 
         //-----------------------------------------------------графика----------------------------------------------
        
-       
+        std::vector<vk::ShaderModule> loadedShaderModules;
         //vk::RenderPass renderPass;
         vk::DescriptorSetLayout descriptorSetLayout;
         vk::PipelineLayout pipelineLayout;
+
         vk::Pipeline graphicsPipeline;
+
+        //skybox
+
+        struct SkyboxData {
+            bool displaySkybox = true;
+            ::vkh::TextureCubeMap* skybox;
+            vk::Pipeline skyboxPipeline;
+            std::vector<vk::DescriptorSet> skyboxDescriptorSets;
+            std::vector<vk::Buffer> skyboxUBOBuffers;
+            std::vector<vk::DeviceMemory> skyboxUBOBuffersMemory;
+
+            std::vector<te::Vertex> vertices = {
+                { { -20.0f, -20.0f, -20.0f }, { 1.0f, 0.0f, 0.0f }, {0.0f, 1.0f} },
+                { {-20.0f, 20.0f, -20.0f }, { 1.0f, 0.0f, 0.0f }, {0.0f, 1.0f} },
+                { { 20.0f, -20.0f, -20.0f }, { 1.0f, 0.0f, 0.0f }, {0.0f, 1.0f} },
+                { {20.0f, 20.0f, -20.0f}, { 1.0f, 0.0f, 0.0f }, {0.0f, 1.0f} },
+                { { 20.0f, -20.0f, 20.0f}, { 1.0f, 0.0f, 0.0f }, {0.0f, 1.0f} },
+                { { 20.0f, 20.0f, 20.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } },
+                { { -20.0f, -20.0f, 20.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } },
+                { { -20.0f, 20.0f, 20.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } },
+            };
+
+            std::vector<uint32_t> _indices = {
+                0, 1, 2,
+                2, 1, 3,
+                2, 3, 4,
+                4, 3, 5,
+                4, 5, 6,
+                6, 5, 7,
+                6, 7, 0,
+                0, 7, 1,
+                6, 0, 2,
+                2, 4, 6,
+                7, 5, 3,
+                7, 3, 1
+
+            };
+
+            vk::Buffer vertexBuffer;
+            vk::DeviceMemory vertexBufferMemory;
+            vk::Buffer _indexBuffer;
+            vk::DeviceMemory _indexBufferMemory;
+
+        } skyboxData;
+
+      
+
         vk::PipelineCache pipelineCache;     
         //vk::CommandPool transferCommandPool;
         //очередь команд для вычисления елементов графики
@@ -184,6 +232,8 @@ namespace te
 
         //создание привязки данных к шейдерам (vertex, fragment)
         void createDescriptorSetLayout();
+
+        vk::PipelineShaderStageCreateInfo loadShader(std::string path, vk::ShaderStageFlagBits stage);
 
         //определение всех этапов отрисовки изображения
         void createGraphicsPipeline();

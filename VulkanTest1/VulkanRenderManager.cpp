@@ -10,6 +10,84 @@
 #include <array>
 #pragma region vulkan instancing
 
+void te::VulkanRenderManager::initialize(te::Window* wnd) {
+
+
+    instance = new VulkanRenderManager();
+    instance->window = wnd;
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+
+    instance->createInstance();
+
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance->vulkanDevice->instance);
+
+    instance->setupDebugMessenger();
+    instance->createSurface();
+    instance->pickPhysicalDevice();
+    instance->createLogicalDevice();
+
+    instance->createVulkanMemoryAllocator();
+
+
+    instance->createSwapchain();
+    instance->createFramebuffers();
+
+    instance->createDescriptorSetLayout();
+    instance->createPipelineCache();
+    instance->createGraphicsPipeline();
+    instance->createCommandPool();
+    instance->createDepthResources();
+
+
+    instance->texture = new ::vkh::Texture2D(instance->vulkanDevice);
+    instance->skyboxData.skybox = new ::vkh::TextureCubeMap(instance->vulkanDevice);
+    instance->texture->loadFromFile(TEXTURE_PATH, vk::Format::eR8G8B8A8Srgb, instance->vulkanQueues.graphicsQueue);
+    instance->skyboxData.skybox->loadFromFile(instance->skyboxPaths, vk::Format::eR8G8B8A8Srgb, instance->vulkanQueues.graphicsQueue);
+    /* instance->createTextureImage(instance->textureImage, instance->mipLevels);
+     instance->createTextureImageView(instance->textureImageView, instance->textureImage, instance->mipLevels);
+     instance->createTextureSampler();*/
+    instance->loadModel();
+    instance->gObject = new Entity();
+    instance->gTransform = (Transform*)instance->gObject->getComponent(typeid(Transform).hash_code());
+    instance->gTransform->onAwake();
+
+    instance->createVertexBuffer(
+        instance->vertices,
+        instance->vertexBuffer,
+        instance->vertexBufferMemory
+
+    );
+
+    instance->vulkanDevice->createVertexBuffer(
+        instance->skyboxData.vertices,
+        instance->skyboxData.vertexBuffer,
+        instance->skyboxData.vertexBufferMemory,
+        instance->vulkanDevice->commandPool,
+        instance->vulkanQueues.graphicsQueue
+    );
+
+    instance->createIndexBuffer(
+        instance->_indices,
+        instance->_indexBuffer,
+        instance->_indexBufferMemory
+    );
+
+    instance->vulkanDevice->createIndexBuffer(
+        instance->skyboxData._indices,
+        instance->skyboxData._indexBuffer,
+        instance->skyboxData._indexBufferMemory,
+        instance->vulkanDevice->commandPool,
+        instance->vulkanQueues.graphicsQueue
+    );
+
+    instance->createUniformBuffers();
+    instance->createDescriptorPool();
+    instance->createDescriptorSets();
+    instance->createCommandBuffers();
+    instance->createSyncObjects();
+
+}
+
 void te::VulkanRenderManager::createInstance()
 {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
@@ -138,114 +216,8 @@ void te::VulkanRenderManager::createSwapchain()
     mySwapChain->createSwapChain(width, height);
 }
 
-void te::VulkanRenderManager::initialize(te::Window* wnd) {
 
 
-    instance = new VulkanRenderManager();
-    instance->window = wnd;
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-   
-    instance->createInstance();
-
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance->vulkanDevice->instance);
-
-    instance->setupDebugMessenger();
-    instance->createSurface();
-    instance->pickPhysicalDevice();
-    instance->createLogicalDevice();
-
-    instance->createVulkanMemoryAllocator();
-
-   
-    instance->createSwapchain();
-    instance->createFramebuffers();
-
-    instance->createDescriptorSetLayout();
-    instance->createPipelineCache();
-    instance->createGraphicsPipeline();
-    instance->createCommandPool();
-    instance->createDepthResources();
-
-   
-    instance->texture = new ::vkh::Texture2D(instance->vulkanDevice);
-    instance->skybox = new ::vkh::TextureCubeMap(instance->vulkanDevice);
-    instance->texture->loadFromFile(TEXTURE_PATH, vk::Format::eR8G8B8A8Srgb, instance->vulkanQueues.graphicsQueue);
-    instance->skybox->loadFromFile(instance->skyboxPaths, vk::Format::eR8G8B8A8Srgb, instance->vulkanQueues.graphicsQueue);
-   /* instance->createTextureImage(instance->textureImage, instance->mipLevels);
-    instance->createTextureImageView(instance->textureImageView, instance->textureImage, instance->mipLevels);
-    instance->createTextureSampler();*/
-    instance->loadModel();
-    instance->gObject = new Entity();
-    instance->gTransform = (Transform*)instance->gObject->getComponent(typeid(Transform).hash_code());
-    instance->gTransform->onAwake();
-
-    instance->createVertexBuffer(
-        instance->vertices,
-        instance->vertexBuffer,
-        instance->vertexBufferMemory
-
-    );
-
-    instance->createIndexBuffer(
-        instance->_indices,
-        instance->_indexBuffer,
-        instance->_indexBufferMemory
-    );
-
-    instance->createUniformBuffers();
-    instance->createDescriptorPool();
-    instance->createDescriptorSets();
-    instance->createCommandBuffers();
-    instance->createSyncObjects();
-
-}
-void te::VulkanRenderManager::terminate()
-{
-    instance->cleanupSwapChain();
-
-    // удаление даных о текстуре в  GPU
-
-    delete instance->texture;
-    delete instance->skybox;
-   /* instance-> vulkanDevice->logicalDevice.destroySampler(instance->textureSampler, nullptr);
-    instance-> vulkanDevice->logicalDevice.destroyImageView(instance->textureImageView, nullptr);
-    instance-> vulkanDevice->logicalDevice.destroyImage(instance->textureImage, nullptr);
-    instance-> vulkanDevice->logicalDevice.freeMemory(instance->textureImageMemory, nullptr);*/
-
-
-
-    instance-> vulkanDevice->logicalDevice.destroyDescriptorSetLayout(instance->descriptorSetLayout, nullptr);
-
-    instance-> vulkanDevice->logicalDevice.destroyBuffer(instance->_indexBuffer, nullptr);
-    instance-> vulkanDevice->logicalDevice.freeMemory(instance->_indexBufferMemory, nullptr);
-
-    instance-> vulkanDevice->logicalDevice.destroyBuffer(instance->vertexBuffer, nullptr);
-    instance-> vulkanDevice->logicalDevice.freeMemory(instance->vertexBufferMemory, nullptr);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->synch.renderFinishedSemaphores[i], nullptr);
-        instance-> vulkanDevice->logicalDevice.destroySemaphore(instance->synch.imageAvailableSemaphores[i], nullptr);
-        instance-> vulkanDevice->logicalDevice.destroyFence(instance->synch.inFlightFences[i], nullptr);
-    }
-
-    instance-> vulkanDevice->logicalDevice.destroyPipelineCache(instance->pipelineCache, nullptr);
-    instance-> vulkanDevice->logicalDevice.destroyCommandPool(instance->vulkanDevice->commandPool, nullptr);
-
-    instance-> vulkanDevice->logicalDevice.destroy();
-
-    if (enableValidationLayers) {
-        instance->vulkanDevice->instance.destroyDebugUtilsMessengerEXT(instance->debugMessenger, nullptr);
-    }
-   
-    delete instance->mySwapChain;
-    
-    instance->vulkanDevice->instance.destroy();
-
-    delete instance->vulkanDevice;
-
-    delete instance;
-   
-}
 #pragma region vulkan validation layer (debug)
 void te::VulkanRenderManager::setupDebugMessenger()
 {
@@ -259,10 +231,6 @@ void te::VulkanRenderManager::setupDebugMessenger()
     }
 
 }
-
-#pragma endregion
-
-#pragma region drawing surface
 
 void te::VulkanRenderManager::createSurface()
 {
@@ -300,33 +268,25 @@ void te::VulkanRenderManager::createDescriptorSetLayout()
     }
 }
 
+vk::PipelineShaderStageCreateInfo te::VulkanRenderManager::loadShader(std::string path, vk::ShaderStageFlagBits stage)
+{
+    auto shaderCode = te::FileReader::readFile(path);
+    vk::ShaderModule shaderModule = vulkanDevice->createShaderModule(shaderCode);
+
+    vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
+
+    vertShaderStageInfo.stage = stage;
+    vertShaderStageInfo.module = shaderModule;
+    vertShaderStageInfo.pName = "main";
+
+    loadedShaderModules.push_back(shaderModule);
+
+    return vertShaderStageInfo;
+}
 void te::VulkanRenderManager::createGraphicsPipeline()
 {
-    //---------------- считывание байткода шейдеров с файлов----------------
-    auto vertShaderCode = te::FileReader::readFile("shaders/vert.spv");
-    auto fragShaderCode = te::FileReader::readFile("shaders/frag.spv");
-
-    //создание шейдерных модулей вулкана
-    vk::ShaderModule vertShaderModule =  vulkanDevice->createShaderModule(vertShaderCode);
-    vk::ShaderModule fragShaderModule =  vulkanDevice->createShaderModule(fragShaderCode);
-
-    
-    //создание структур для уровня шейдеров в графичксом пайплайне
-    vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
-   
-    vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-    vertShaderStageInfo.module = vertShaderModule;
-    vertShaderStageInfo.pName = "main";
- 
-
-    vk::PipelineShaderStageCreateInfo fragShaderStageInfo{};
-    
-    fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-    fragShaderStageInfo.module = fragShaderModule;
-    fragShaderStageInfo.pName = "main";
-
-    vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-
+  
+    std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages;
 
     //--------------определение структуры для ввода вертексов в шейдер-----------------------
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -432,8 +392,8 @@ void te::VulkanRenderManager::createGraphicsPipeline()
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{};
 
-    pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.pStages = shaderStages.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
@@ -446,13 +406,26 @@ void te::VulkanRenderManager::createGraphicsPipeline()
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = nullptr;
 
+    shaderStages[0] = loadShader("shaders/vert.spv", vk::ShaderStageFlagBits::eVertex);
+    shaderStages[1] = loadShader("shaders/frag.spv", vk::ShaderStageFlagBits::eFragment);
+
     if ( vulkanDevice->logicalDevice.createGraphicsPipelines(pipelineCache, 1, &pipelineInfo, nullptr, &graphicsPipeline) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
-    
-     vulkanDevice->logicalDevice.destroyShaderModule(fragShaderModule, nullptr);
-     vulkanDevice->logicalDevice.destroyShaderModule(vertShaderModule, nullptr);
+    shaderStages[0] = loadShader("shaders/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    shaderStages[1] = loadShader("shaders/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    rasterizer.cullMode = vk::CullModeFlagBits::eFront;
+     
+    if (vulkanDevice->logicalDevice.createGraphicsPipelines(pipelineCache, 1, &pipelineInfo, nullptr, &skyboxData.skyboxPipeline) != vk::Result::eSuccess) {
+        throw std::runtime_error("failed to create graphics pipeline!");
+    }
+
+    for (int i = 0; i < loadedShaderModules.size(); i++)
+        vulkanDevice->logicalDevice.destroyShaderModule(loadedShaderModules[i]);
+
+    loadedShaderModules.clear();
+
 }
 
 void te::VulkanRenderManager::createCommandPool()
@@ -470,22 +443,7 @@ void te::VulkanRenderManager::createCommandPool()
 
 void te::VulkanRenderManager::createDepthResources()
 {
-    /*vk::Format depthFormat = findDepthFormat();
-
-    auto swapChainExtent = mySwapChain->getExtent();
-
-    createImage(
-        swapChainExtent.width,
-        swapChainExtent.height,
-        1, depthFormat, vk::ImageTiling::eOptimal,
-        vk::ImageUsageFlagBits::eDepthStencilAttachment,
-        vk::MemoryPropertyFlagBits::eDeviceLocal,
-        depthImage, depthImageMemory
-    );
-
-    depthImageView =  vulkanDevice->createImageView(
-        depthImage, depthFormat,
-        vk::ImageAspectFlagBits::eDepth, 1, vulkanDevice->logicalDevice);*/
+   
 }
 
 void te::VulkanRenderManager::createFramebuffers()
@@ -575,6 +533,8 @@ void te::VulkanRenderManager::createUniformBuffers()
 
     uniformBuffers.resize(mySwapChain->getChainsCount());
     uniformBuffersMemory.resize(mySwapChain->getChainsCount());
+    skyboxData.skyboxUBOBuffers.resize(mySwapChain->getChainsCount());
+    skyboxData.skyboxUBOBuffersMemory.resize(mySwapChain->getChainsCount());
 
     for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
          vulkanDevice->createBuffer(
@@ -584,6 +544,14 @@ void te::VulkanRenderManager::createUniformBuffers()
             vk::MemoryPropertyFlagBits::eHostCoherent,
             uniformBuffers[i], uniformBuffersMemory[i]
         );
+
+         vulkanDevice->createBuffer(
+             bufferSize,
+             vk::BufferUsageFlagBits::eUniformBuffer,
+             vk::MemoryPropertyFlagBits::eHostVisible |
+             vk::MemoryPropertyFlagBits::eHostCoherent,
+             skyboxData.skyboxUBOBuffers[i], skyboxData.skyboxUBOBuffersMemory[i]
+         );
     }
 }
 
@@ -599,7 +567,7 @@ void te::VulkanRenderManager::createDescriptorPool()
    
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(mySwapChain->getChainsCount());
+    poolInfo.maxSets = static_cast<uint32_t>(mySwapChain->getChainsCount() * 2);
 
     if ( vulkanDevice->logicalDevice.createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create descriptor pool!");
@@ -620,7 +588,13 @@ void te::VulkanRenderManager::createDescriptorSets()
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
 
+    skyboxData.skyboxDescriptorSets.resize(mySwapChain->getChainsCount());
+    if (vulkanDevice->logicalDevice.allocateDescriptorSets(&allocInfo, skyboxData.skyboxDescriptorSets.data()) != vk::Result::eSuccess) {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+    }
+
     for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
+
         vk::DescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = uniformBuffers[i];
         bufferInfo.offset = 0;
@@ -643,9 +617,25 @@ void te::VulkanRenderManager::createDescriptorSets()
         descriptorWrites[1].dstSet = descriptorSets[i];
         descriptorWrites[1].dstBinding = 1;
         descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;;
+        descriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
         descriptorWrites[1].descriptorCount = 1;
         descriptorWrites[1].pImageInfo = &imageInfo;
+
+         vulkanDevice->logicalDevice.updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
+         //skybox 
+
+         bufferInfo.buffer = skyboxData.skyboxUBOBuffers[i];
+
+         imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;// skyboxData.skybox->textureImageLoyout;
+         imageInfo.imageView = skyboxData.skybox->textureImageView;
+         imageInfo.sampler = skyboxData.skybox->textureSampler;
+
+         descriptorWrites[0].dstSet = skyboxData.skyboxDescriptorSets[i];
+         descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+         descriptorWrites[1].dstSet = skyboxData.skyboxDescriptorSets[i];
+         descriptorWrites[1].pImageInfo = &imageInfo;
 
          vulkanDevice->logicalDevice.updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
@@ -686,22 +676,31 @@ void te::VulkanRenderManager::createCommandBuffers()
 
         vulkanDevice->commandBuffers[i].beginRenderPass(&renderPassInfo, vk::SubpassContents::eInline);
 
-        vulkanDevice->commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+       
 
-        vk::Buffer vertexBuffers[] = { vertexBuffer };
+      
         vk::DeviceSize offsets[] = { 0 };
 
+        vk::Buffer skyboxVertexBuffers[] = { skyboxData.vertexBuffer };
+        vk::Buffer vertexBuffers[] = { vertexBuffer };
+        vulkanDevice->commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
         vulkanDevice->commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
-
         vulkanDevice->commandBuffers[i].bindIndexBuffer(_indexBuffer, 0, vk::IndexType::eUint32);
-        
         vulkanDevice->commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-
         vulkanDevice->commandBuffers[i].drawIndexed(static_cast<uint32_t>(_indices.size()), 1, 0, 0, 0);
-
-        vkCmdEndRenderPass(vulkanDevice->commandBuffers[i]);
-
+       
+        //skybox
+        vulkanDevice->commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, skyboxData.skyboxPipeline);
+           
+        vulkanDevice->commandBuffers[i].bindVertexBuffers(0, 1, skyboxVertexBuffers, offsets);
+        vulkanDevice->commandBuffers[i].bindIndexBuffer(skyboxData._indexBuffer, 0, vk::IndexType::eUint32);
+        vulkanDevice->commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &skyboxData.skyboxDescriptorSets[i], 0, nullptr);
+        vulkanDevice->commandBuffers[i].drawIndexed(static_cast<uint32_t>(skyboxData._indices.size()), 1, 0, 0, 0);
         
+
+
+        vulkanDevice->commandBuffers[i].endRenderPass();
+      
         vulkanDevice->commandBuffers[i].end();
 
     }
@@ -758,8 +757,12 @@ void te::VulkanRenderManager::updateUniformBuffer(uint32_t currentImage)
     void* data;
     
      vulkanDevice->logicalDevice.mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo), {}, &data);
-    memcpy(data, &ubo, sizeof(ubo));
+     memcpy(data, &ubo, sizeof(ubo));
      vulkanDevice->logicalDevice.unmapMemory(uniformBuffersMemory[currentImage]);
+
+     vulkanDevice->logicalDevice.mapMemory(skyboxData.skyboxUBOBuffersMemory[currentImage], 0, sizeof(ubo), {}, &data);
+     memcpy(data, &ubo, sizeof(ubo));
+     vulkanDevice->logicalDevice.unmapMemory(skyboxData.skyboxUBOBuffersMemory[currentImage]);
 }
 
 void te::VulkanRenderManager::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -950,27 +953,7 @@ void te::VulkanRenderManager::recreateSwapChain()
     createCommandBuffers();
 }
 
-void te::VulkanRenderManager::cleanupSwapChain()
-{
 
-
-     vulkanDevice->logicalDevice.freeCommandBuffers(vulkanDevice->commandPool, static_cast<uint32_t>(vulkanDevice->commandBuffers.size()), vulkanDevice->commandBuffers.data());
-
-     mySwapChain->destroyFramebuffers();
-
-     vulkanDevice->logicalDevice.destroyPipeline( graphicsPipeline, nullptr);
-     vulkanDevice->logicalDevice.destroyPipelineLayout( pipelineLayout, nullptr);
-
-    
-    mySwapChain->destroySwapchain();
-
-    for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
-         vulkanDevice->logicalDevice.destroyBuffer(uniformBuffers[i], nullptr);
-         vulkanDevice->logicalDevice.freeMemory(uniformBuffersMemory[i], nullptr);
-    }
-
-     vulkanDevice->logicalDevice.destroyDescriptorPool(descriptorPool, nullptr);
-}
 
 void te::VulkanRenderManager::drawFrame()
 {
@@ -1040,4 +1023,81 @@ void te::VulkanRenderManager::drawFrame()
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void te::VulkanRenderManager::cleanupSwapChain()
+{
+
+
+    vulkanDevice->logicalDevice.freeCommandBuffers(vulkanDevice->commandPool, static_cast<uint32_t>(vulkanDevice->commandBuffers.size()), vulkanDevice->commandBuffers.data());
+
+    mySwapChain->destroyFramebuffers();
+
+    vulkanDevice->logicalDevice.destroyPipeline(graphicsPipeline, nullptr);
+    vulkanDevice->logicalDevice.destroyPipeline(skyboxData.skyboxPipeline, nullptr);
+    vulkanDevice->logicalDevice.destroyPipelineLayout(pipelineLayout, nullptr);
+
+
+    mySwapChain->destroySwapchain();
+
+    for (size_t i = 0; i < mySwapChain->getChainsCount(); i++) {
+        vulkanDevice->logicalDevice.destroyBuffer(uniformBuffers[i], nullptr);
+        vulkanDevice->logicalDevice.freeMemory(uniformBuffersMemory[i], nullptr);
+
+        vulkanDevice->logicalDevice.destroyBuffer(skyboxData.skyboxUBOBuffers[i], nullptr);
+        vulkanDevice->logicalDevice.freeMemory(skyboxData.skyboxUBOBuffersMemory[i], nullptr);
+
+    }
+
+    vulkanDevice->logicalDevice.destroyDescriptorPool(descriptorPool, nullptr);
+}
+
+void te::VulkanRenderManager::terminate()
+{
+    instance->cleanupSwapChain();
+
+    // удаление даных о текстуре в  GPU
+
+    delete instance->texture;
+    delete instance->skyboxData.skybox;
+
+
+    instance->vulkanDevice->logicalDevice.destroyDescriptorSetLayout(instance->descriptorSetLayout, nullptr);
+
+    instance->vulkanDevice->logicalDevice.destroyBuffer(instance->_indexBuffer, nullptr);
+    instance->vulkanDevice->logicalDevice.freeMemory(instance->_indexBufferMemory, nullptr);
+
+    instance->vulkanDevice->logicalDevice.destroyBuffer(instance->vertexBuffer, nullptr);
+    instance->vulkanDevice->logicalDevice.freeMemory(instance->vertexBufferMemory, nullptr);
+
+    //destroy skybox cube buffers
+    instance->vulkanDevice->logicalDevice.destroyBuffer(instance->skyboxData._indexBuffer, nullptr);
+    instance->vulkanDevice->logicalDevice.freeMemory(instance->skyboxData._indexBufferMemory, nullptr);
+
+    instance->vulkanDevice->logicalDevice.destroyBuffer(instance->skyboxData.vertexBuffer, nullptr);
+    instance->vulkanDevice->logicalDevice.freeMemory(instance->skyboxData.vertexBufferMemory, nullptr);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        instance->vulkanDevice->logicalDevice.destroySemaphore(instance->synch.renderFinishedSemaphores[i], nullptr);
+        instance->vulkanDevice->logicalDevice.destroySemaphore(instance->synch.imageAvailableSemaphores[i], nullptr);
+        instance->vulkanDevice->logicalDevice.destroyFence(instance->synch.inFlightFences[i], nullptr);
+    }
+
+    instance->vulkanDevice->logicalDevice.destroyPipelineCache(instance->pipelineCache, nullptr);
+    instance->vulkanDevice->logicalDevice.destroyCommandPool(instance->vulkanDevice->commandPool, nullptr);
+
+    instance->vulkanDevice->logicalDevice.destroy();
+
+    if (enableValidationLayers) {
+        instance->vulkanDevice->instance.destroyDebugUtilsMessengerEXT(instance->debugMessenger, nullptr);
+    }
+
+    delete instance->mySwapChain;
+
+    instance->vulkanDevice->instance.destroy();
+
+    delete instance->vulkanDevice;
+
+    delete instance;
+
 }

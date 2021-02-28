@@ -220,7 +220,7 @@ namespace vkh
         device->logicalDevice.unmapMemory(stagingBufferMemory);
 
         device->createImage(
-            texWidth*6, texHeight, 1,
+            texWidth, texHeight, 1,
             format,
             vk::ImageTiling::eOptimal,
             vk::ImageUsageFlagBits::eTransferSrc |
@@ -236,6 +236,8 @@ namespace vkh
             commandBuffer, textureImage, 1,
             vk::ImageAspectFlagBits::eColor, vk::ImageLayout::eUndefined,
             vk::ImageLayout::eTransferDstOptimal, 6);
+
+        device->endSingleTimeCommands(commandBuffer, copyQueue, device->commandPool);
 
         // Setup buffer copy regions for each face including all of its mip levels
         std::vector<vk::BufferImageCopy> bufferCopyRegions;
@@ -259,17 +261,21 @@ namespace vkh
             
         }
 
+        commandBuffer = device->beginSingleTimeCommands(device->commandPool);
         commandBuffer.copyBufferToImage(stagingBuffer,
             textureImage,
             vk::ImageLayout::eTransferDstOptimal,
             static_cast<uint32_t>(bufferCopyRegions.size()),
             bufferCopyRegions.data());
-        
+        device->endSingleTimeCommands(commandBuffer, copyQueue, device->commandPool);
+
+
+        commandBuffer = device->beginSingleTimeCommands(device->commandPool);
 
         device->setImageLayout(
             commandBuffer, textureImage, 1,
             vk::ImageAspectFlagBits::eColor, vk::ImageLayout::eTransferDstOptimal,
-            imageLayout, 6);
+            vk::ImageLayout::eShaderReadOnlyOptimal, 6);
 
         device->endSingleTimeCommands(commandBuffer, copyQueue, device->commandPool);
 
